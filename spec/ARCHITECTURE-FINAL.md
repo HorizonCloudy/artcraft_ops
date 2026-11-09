@@ -2363,3 +2363,106 @@ cp "$TEMP/artcraft_host_backup_20261109-133035/roots.py" \
 ```
 
 **本轮第 4 次「判据写错」的记录**：验证负例时我用 `payload["error_code"]` 取码，宿主返回的是 `500`，于是 9 条全被判成「未拒绝」；实际码在 `payload["error"]["message"]`。**改判据后 9/9 命中**。规则同前：**结果全红/全绿时先怀疑自己的判据，再怀疑实现**。
+
+---
+
+### §19.13 工程化收口：清理、打包、版本控制（2026-11-09，**零测试数变化**）
+
+**性质**：不是功能轮次，是「让它像个工程」的收口。判据只有一条 —— **测试数不变、行为不变、静态检查归零**。
+
+```
+校验前  263 passed / 1 skipped
+校验后  263 passed / 1 skipped     （无增无减）
+静态检查 ruff F+E9+B              从 8 条 → 0 条
+打包     19 文件 / 98368 B / sha256 39d4fe55…
+```
+
+#### §19.13.1 真正清掉的（每条都有依据，不是"看着多余"）
+
+| 项 | 位置 | 依据 |
+|---|---|---|
+| `_to_long_form`（19 行） | `roots.py` | 全仓零调用；docstring 自称「只用于 data_path 派生」但该派生路径从未实现 |
+| `dumps_safe`（3 行） | `bridge.py` | 零调用，且不在 `__all__`；随之移除 `import json` |
+| `_lock()` + `_LOCK`（6 行） | `jobs.py` | 零调用。**留着比删掉更危险**：它会让读者以为 `_JOBS` 有并发保护，实际没有 |
+| `from . import result as result_mod` | `__init__.py` | 导入后零使用（`result` 的真使用者是 `jobs.py`） |
+| `from .i18n import t` | `jobs.py` | 零使用 |
+| `import os` / 未用变量 `spec` | `tests/test_roots.py` / `test_families17.py` | ruff F401 / F841 |
+| `spec/ARCHITECTURE.md`（43 KB） | `spec/` | FINAL 文首已明写「本文件是唯一有效版本，ARCHITECTURE.md 已作废」。**作废文档与有效文档共存是事故源**（有人照着旧稿改） |
+| `.pytest_cache` ×3 / `__pycache__` ×4 | 源码树 | 生成物，可再生 |
+
+#### §19.13.2 修掉的三个「静默失效」（比死代码严重）
+
+**（一）`pytest.ini` 放错目录 → 裸跑 pytest 根本不加载它**
+
+`tests/pytest.ini` 在裸跑 `pytest`（rootdir = 插件根）时**不会被读取**，于是：
+
+- `asyncio_default_fixture_loop_scope` 没生效 → 每轮喷 `PytestDeprecationWarning`
+- `markers` 没注册 → `-m integration` 的有效性依赖 pytest 的宽松行为
+
+已搬到 `artcraft_ops/pytest.ini`，并加 `--strict-markers`（marker 拼错直接报错）+ `testpaths = tests`。
+实测：裸跑与 `pytest tests/` 两种方式结果一致、警告消失、`-m integration` 精确命中 1 条 skip。
+
+**（二）`_fixtures.py` 的数据来源指向已作废文档，且相对路径少一级**
+
+```
+改前  ../spec/ARCHITECTURE.md          （文件不存在 + 已作废）
+改后  ../../spec/ARCHITECTURE-FINAL.md （tests/ 到项目根是两级）
+```
+
+**（三）两处文档与实现相反**
+
+| 位置 | 原文 | 实际 |
+|---|---|---|
+| `errors.redact_text` | 「命中任一凭证形态 → **整段替换**为 `***`」 | `pattern.sub` = **局部替换**，未命中部分原样保留 |
+| `_debug_records_naming` | 「既接受 `logger.debug(..., exc_info=True)` 的标准形态」 | `locator.py:36` **明文禁止** `exc_info` —— 它会把未脱敏的原始 traceback 挂到 record 上，绕过 `redact_text` |
+
+第二条不只是文字问题：**后人照这句去"修正"实现，就会引入脱敏绕过**。已在 docstring 里写明「这个分支只是兼容兜底，生产必须走预格式化参数分支」。
+
+#### §19.13.3 评估后**决定保留**的（附理由，避免下一轮重复讨论）
+
+| 项 | 为什么留 |
+|---|---|
+| `bridge.py`（131 行）+ `studio_channel.py`（55 行） | spec §2/§6 明文要求「v1 只留接口不实现」。**删了是推翻设计，不是清理**；建议由产品侧另行裁决，本轮不动 |
+| `validate_tool_kwargs`（零生产调用） | 它的测试 docstring 写明「当前是死代码，但契约要守住……将来一接线就是同一个漏洞」。删它等于拆掉一条**已登记的安全契约** |
+| `build_root_flags`（零生产调用，spec:1661 曾称死代码） | 它的测试里编码了两条实测事实：`mcp --bridge` 传 root 会 exit 2、`PHOTOCRAFT_AUTOMATION_*` 只作用桌面进程。**15 行代码换两条实测结论，不删** |
+| `roots.resolve_and_check(..., direction)` 形参 | spec:890 已定义为「语义标签，不参与判定」。删它要改 17 处且无行为收益；改为在定义处把「不参与判定」写实，消掉误导即可 |
+| `probe/*.json`（1.1 MB 命令目录） | `sequence.py` 两处 docstring 以它为证据底座（993/933 条命令全量扫描）。**删证据 = 让结论失去可复核性** |
+
+#### §19.13.4 唯一的行为变更（如实记）
+
+`command_catalog.py` 的 `except (asyncio.TimeoutError, TimeoutError)` 里补了 `as exc` + `raise ... from exc`（ruff B904）。
+原先靠 Python 隐式链接（`__context__`），现在显式声明因果。**对外错误码、消息文本、控制流全部不变**，只有 traceback 的措辞从「During handling of the above exception」变成「The above exception was the direct cause」。
+
+#### §19.13.5 版本控制（本仓库此前**没有 git**）
+
+这是本轮最大的工程缺口：所有改动不可追溯、不可回滚、不可 bisect。已落地：
+
+- `git init -b main`，首次提交 `38d1533`（110 个文件）
+- `.gitattributes` 锁 `eol=lf` —— **因为宿主部署校验是逐字节 sha256**，git 若把 LF 转 CRLF，部署校验会全部失配
+- `.gitignore` 覆盖 `__pycache__` / `.pytest_cache` / `dist/` / 运行期 `data|cache|config` / `*.orig|*.rej`
+- 清理前全量快照在**项目外**：`%USERPROFILE%\WorkBuddy\_snapshot_2026-11-07-22-33-50_20261109-135145`（113 文件 / 2.2 MB）。放项目内会被自己 ignore，等于没有
+
+#### §19.13.6 发布包（可复现）
+
+`tools/build_release.py`，三条硬约束：
+
+1. **只打运行时必需**：16 个 `.py` + `plugin.toml` + `config.example.toml` + `README.md` = 19 个文件。`tests/` `probe/` 不进包
+2. **固定时间戳**（git 提交时间，可用 `SOURCE_DATE_EPOCH` 覆盖）→ 同内容重复打包得到**同一份 sha256**。已实测两次打包哈希一致
+3. **打包后回读自检**：解压 → 校验条目集合/顶层目录名 → 逐文件 sha256 → 全模块 `py_compile` → 版本一致性
+
+```
+dist/artcraft_ops-1.0.0.zip   19 文件 / 98368 B
+sha256  39d4fe550929771cc067e7535ed0bcd6402e6a4188abaf39a83be008a6869f6f
+dist/SHA256SUMS.txt           包 + 每个源文件的哈希
+```
+
+**功能级验证（不是只看 zip 能解开）**：把 `tests/` 与 `pytest.ini` 搬进**解压后的包**再跑全量 →
+`263 passed, 1 skipped`。即「打出来的这份东西，本身就能通过完整测试」。
+
+#### §19.13.7 未做（明确留白，不是遗忘）
+
+| 项 | 原因 |
+|---|---|
+| 拆 `test_params_roots.py`（1732 行 / 87 KB） | 结构本身是按编号分段的，拆分纯属搬运；在无 VCS 历史时做大范围移动，diff 会失去可读性。等有 git 历史后再做 |
+| 引入 mypy / bandit | 未安装；且 `mypy` 对该项目的 `Any` 密集签名会产出大量噪声，需要单独一轮定 baseline |
+| `bridge.py` / `studio_channel.py` 去留 | 见 §19.13.3，属产品裁决 |
