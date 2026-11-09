@@ -1,0 +1,19 @@
+usage: designcraft-cli run [--in FILE | --sample] [--cmd ID[=JSON]]... [--page N] [--scale S] [--pdf-options JSON] [--export OUT] [--all-pages DIR]
+         (--page, --scale and --pdf-options apply to the exports that follow them)
+       designcraft-cli commands [FILTER]
+       designcraft-cli describe COMMAND
+       designcraft-cli script [FILE|-] [--in FILE | --sample] [--connect PORT] [--save OUT] [--export OUT] [--keep-going]
+       designcraft-cli app [--port PORT] COMMAND [JSON] | --method METHOD [JSON]
+       designcraft-cli mcp [--connect PORT] [--sample] [--automation-read-root DIR]... [--automation-write-root DIR]...
+         the roots confine every file the agent's commands read (open, placed images, data sources, libraries) and
+         write (save, export, package) to those folders, links followed. Each may be given more than once; a kind
+         left out grants none of its access.
+         They run the in-process server, so they conflict with --connect (a running app is not confined by them).
+       designcraft-cli perf [--pages N] [--runs N] [--strict]
+       designcraft-cli bench FILE [--runs N]
+       designcraft-cli validate-pdf FILE.pdf [--standard x4|x1a]  # built-in PDF/X checks (including visible unembedded fonts; the standard defaults to the file's own)
+       designcraft-cli thumbnail FILE.designcraft OUT.png [SIZE]  # the saved first-page preview, at most SIZE px
+       designcraft-cli links
+       designcraft-cli --version
+
+Community: https://discord.gg/artcraft  ·  https://getartcraft.com/apps/designcraft  ·  https://github.com/storytold/designcraft

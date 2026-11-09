@@ -1,0 +1,2 @@
+usage: designcraft-cli run [--in FILE | --sample] [--cmd ID[=JSON]]... [--page N] [--scale S] [--pdf-options JSON] [--export OUT] [--all-pages DIR]
+         (--page, --scale and --pdf-options apply to the exports that follow them)

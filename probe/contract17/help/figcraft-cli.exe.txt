@@ -1,0 +1,30 @@
+FigCraft without a window
+
+Files: .figcraft (native), .penpot (Penpot 2.x), .json (FigCraft or REST API file JSON), .fig (best effort; `info` lists what wasn't imported), .sketch (Sketch 48 or newer, best effort), .svg, .png/.jpg/.webp/.gif/.bmp (open as an image layer).
+
+Usage: figcraft-cli [OPTIONS] <COMMAND>
+
+Commands:
+  info      Pages, node counts, top-level frames, style/variable/image counts
+  export    Export frames, a layer or the whole file
+  convert   Convert by extension (.figcraft, .json, .svg, .png, .jpg, .webp, .pdf, .fig, .penpot)
+  render    Render the whole page with its background as png, jpg or webp
+  run       Run a script of commands in a headless session, one JSON result line per step
+  commands  List every command with its label, shortcut, undoable flag (*) and parameters
+  mcp       Serve MCP on stdio: headless, or attached to a running app
+  plugin    Publish plugins to a server's plugin directory
+  connect   Publish a code repository's component mappings (code connect) to a design file
+  perf      Measure the hot paths on synthetic documents and print Markdown tables
+  help      Print this message or the help of the given subcommand(s)
+
+Options:
+      --no-system-fonts
+          Lay text out with the fonts built into FigCraft only, for renders that match on every machine (or set FIGCRAFT_NO_SYSTEM_FONTS=1). Otherwise installed fonts are indexed the first time text is laid out, as in the app
+
+  -h, --help
+          Print help (see a summary with '-h')
+
+  -V, --version
+          Print version
+
+See docs/cli.md and docs/mcp.md.

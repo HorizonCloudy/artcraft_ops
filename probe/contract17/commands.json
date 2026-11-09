@@ -1,0 +1,206 @@
+{
+ "cadcraft-cli.exe": {
+  "cmds_json": {
+   "rc": 2,
+   "out": "",
+   "err": "error: unexpected argument '--json' found\n\n  tip: to pass '--json' as a value, use '-- --json'\n\nUsage: cadcraft-cli commands [OPTIONS] [FILTER]\n\nFor more information, try '--help'.\n"
+  },
+  "cmds_plain": {
+   "rc": 0,
+   "out": "[\n  {\n    \"aliases\": [\n      \"qnew\"\n    ],\n    \"enabled\": true,\n    \"id\": \"new\",\n    \"interactive\": false,\n    \"label\": \"New Drawing...\",\n    \"menu\": [\n      \"File\",\n      \"New Drawing...\"\n    ],\n    \"params\": \"{metric?: bool (default MEASUREINIT), template?: path to a .dwt/.dxf template (\\\".\\\" for ",
+   "err": ""
+  }
+ },
+ "craft-anything-cli.exe": {
+  "cmds_json": {
+   "rc": 0,
+   "out": "[{\"command\":\"core-target-open\",\"needs_target\":false,\"summary\":\"Open a file, app bundle or folder as the active target. Detects what it is from its contents. For raw machine code pass format=raw-binary with architecture and entry_point.\",\"title\":\"Open\",\"tool\":\"core_target_open\",\"toolset\":\"core\"},{\"co",
+   "err": ""
+  },
+  "cmds_plain": {
+   "rc": 0,
+   "out": "[{\"command\":\"core-target-open\",\"needs_target\":false,\"summary\":\"Open a file, app bundle or folder as the active target. Detects what it is from its contents. For raw machine code pass format=raw-binary with architecture and entry_point.\",\"title\":\"Open\",\"tool\":\"core_target_open\",\"toolset\":\"core\"},{\"co",
+   "err": ""
+  }
+ },
+ "deckcraft-cli.exe": {
+  "cmds_json": {
+   "rc": 0,
+   "out": "",
+   "err": ""
+  },
+  "cmds_plain": {
+   "rc": 0,
+   "out": "file.new — New Presentation: {theme?: name, template?: starter name, size?: [w,h] pt, blank?: bool}\nfile.templates — Starter Templates → [{name, summary, theme, slides}]\nfile.open — Open…: {path}\nfile.adopt — Open: {path, token?} (a presentation the host read in the background and staged with Sessio",
+   "err": ""
+  }
+ },
+ "designcraft-cli.exe": {
+  "cmds_json": {
+   "rc": 0,
+   "out": "[]\n",
+   "err": ""
+  },
+  "cmds_plain": {
+   "rc": 0,
+   "out": "[\n  {\n    \"enabled\": true,\n    \"id\": \"file.new\",\n    \"label\": \"Document…\",\n    \"menu\": [\n      \"File\",\n      \"New\"\n    ],\n    \"params\": \"{preset?: \\\"Letter\\\"|\\\"A4\\\"|… or a saved preset (file.savePreset), intent?: print|web|mobile, units?: points|picas|millimeters|…, width?, height?, pages?, startPag",
+   "err": ""
+  }
+ },
+ "effectcraft-cli.exe": {
+  "cmds_json": {
+   "rc": 0,
+   "out": "[{\"enabled\":true,\"id\":\"file.newProject\",\"label\":\"New Project\",\"menu\":[\"File\",\"New\"],\"shortcut\":\"Cmd+Alt+N\"},{\"enabled\":true,\"id\":\"file.openDemoProject\",\"label\":\"Open Demo Project\",\"menu\":[\"Help\"]},{\"enabled\":true,\"id\":\"file.open\",\"label\":\"Open Project...\",\"menu\":[\"File\"],\"params\":\"{path}\",\"shortcut\"",
+   "err": ""
+  },
+  "cmds_plain": {
+   "rc": 0,
+   "out": "file.newProject                      New Project                          Cmd+Alt+N        \nfile.openDemoProject                 Open Demo Project                                     \nfile.open                            Open Project...                      Cmd+O            {path}\nfile.save         ",
+   "err": ""
+  }
+ },
+ "figcraft-cli.exe": {
+  "cmds_json": {
+   "rc": 0,
+   "out": "[\n  {\n    \"id\": \"node.create\",\n    \"label\": \"Create layer\",\n    \"menu\": null,\n    \"params\": \"{type: rectangle|ellipse|polygon|star|line|arrow|vector|text|frame|section|component|slice, x?, y? (relative to the parent frame; groups don't count), width?, height?, parent? (id; default: the page), index?",
+   "err": ""
+  },
+  "cmds_plain": {
+   "rc": 0,
+   "out": "node.create*  Create layer\n    {type: rectangle|ellipse|polygon|star|line|arrow|vector|text|frame|section|component|slice, x?, y? (relative to the parent frame; groups don't count), width?, height?, parent? (id; default: the page), index?, name?, text? | characters? (for text), path? | points? (vect",
+   "err": ""
+  }
+ },
+ "filmcraft-cli.exe": {
+  "cmds_json": {
+   "rc": 0,
+   "out": "[\n  {\n    \"defaultShortcut\": \"Cmd+Alt+N\",\n    \"enabled\": true,\n    \"id\": \"file.newProject\",\n    \"label\": \"Project…\",\n    \"menu\": [\n      \"File\",\n      \"New\"\n    ],\n    \"params\": \"{\\\"name\\\":str}\",\n    \"shortcut\": \"Cmd+Alt+N\",\n    \"shortcuts\": [\n      \"Cmd+Alt+N\"\n    ]\n  },\n  {\n    \"defaultShortcut\": ",
+   "err": ""
+  },
+  "cmds_plain": {
+   "rc": 0,
+   "out": "file.newProject                  Project…                           Cmd+Alt+N      {\"name\":str}\nfile.openDemoProject             Demo Project                                      {}\nfile.newSequence                 Sequence…                          Cmd+N          {\"name\":str,\"width\":u32=1920,\"heigh",
+   "err": ""
+  }
+ },
+ "gridcraft-cli.exe": {
+  "cmds_json": {
+   "rc": 0,
+   "out": "[\n  {\n    \"id\": \"file.new\",\n    \"label\": \"New Workbook\",\n    \"menu\": [\n      \"File\"\n    ],\n    \"params\": \"{sample?: \\\"budget\\\"|\\\"sales\\\"|\\\"grades\\\"}\",\n    \"shortcut\": \"Cmd+N\"\n  },\n  {\n    \"id\": \"file.open\",\n    \"label\": \"Open…\",\n    \"menu\": [\n      \"File\"\n    ],\n    \"params\": \"{path} | {name, base64",
+   "err": ""
+  },
+  "cmds_plain": {
+   "rc": 0,
+   "out": "file.new                       New Workbook (File) [Cmd+N]\n                                 {sample?: \"budget\"|\"sales\"|\"grades\"}\nfile.open                      Open (File) [Cmd+O]\n                                 {path} | {name, base64}, plus {password} for a password-protected workbook and {csvAsTe",
+   "err": "385 commands\n"
+  }
+ },
+ "lightcraft-cli.exe": {
+  "cmds_json": {
+   "rc": 0,
+   "out": "[\n  {\n    \"enabled\": true,\n    \"id\": \"activity.cancel\",\n    \"label\": \"Cancel Background Task\",\n    \"menu\": [],\n    \"params\": \"{id} | {all: true} → {cancelled: n} — ask a task (or every cancellable task) to stop; it stops at its next file or photo (a preview build also stops between a photo's own pre",
+   "err": ""
+  },
+  "cmds_plain": {
+   "rc": 0,
+   "out": "activity.cancel              Cancel Background Task\n                             params: {id} | {all: true} → {cancelled: n} — ask a task (or every cancellable task) to stop; it stops at its next file or photo (a preview build also stops between a photo's own previews). An unknown id (it may have ju",
+   "err": ""
+  }
+ },
+ "materialcraft-cli.exe": {
+  "cmds_json": {
+   "rc": 1,
+   "out": "",
+   "err": "materialcraft-cli: unknown option `--json` for `commands`\n"
+  },
+  "cmds_plain": {
+   "rc": 0,
+   "out": "[\n  {\n    \"enabled\": true,\n    \"id\": \"file.new\",\n    \"label\": \"Graph...\",\n    \"menu\": [\n      \"File\",\n      \"New\"\n    ],\n    \"params\": \"{name?, kind? (material|function), template? (see graph.templates), size? (px, power of two)} adds a new graph to the package and opens it\",\n    \"shortcut\": \"Ctrl+N",
+   "err": ""
+  }
+ },
+ "pdfcraft-cli.exe": {
+  "cmds_json": {
+   "rc": 1,
+   "out": "",
+   "err": "pdfcraft-cli: unknown command 'commands'; see pdfcraft-cli --help\n"
+  },
+  "cmds_plain": {
+   "rc": 1,
+   "out": "",
+   "err": "pdfcraft-cli: unknown command 'commands'; see pdfcraft-cli --help\n"
+  }
+ },
+ "photocraft-cli.exe": {
+  "cmds_json": {
+   "rc": 0,
+   "out": "[\n  {\n    \"disabledReason\": null,\n    \"enabled\": true,\n    \"id\": \"file.new\",\n    \"label\": \"New…\",\n    \"menu\": [\n      \"File\"\n    ],\n    \"needsDocument\": false,\n    \"params\": \"{\\\"width\\\":1..300000=1920,\\\"height\\\":1..300000=1080 (pixel counts are rounded),\\\"mode\\\":\\\"rgb|gray|grayscale|cmyk|lab\\\"=\\\"rgb",
+   "err": ""
+  },
+  "cmds_plain": {
+   "rc": 0,
+   "out": "file.new                                     New…                             File\nfile.close                                   Close                            File\nedit.undo                                    Undo                             Edit\nedit.redo                                    Redo  ",
+   "err": ""
+  }
+ },
+ "solidcraft-cli.exe": {
+  "cmds_json": {
+   "rc": 0,
+   "out": "[\n  {\n    \"disabled_reason\": null,\n    \"enabled\": true,\n    \"icon\": \"sketch\",\n    \"id\": \"sketch.create\",\n    \"label\": \"Create Sketch\",\n    \"panel\": \"CREATE\",\n    \"params\": \"plane: XY|XZ|YZ (sketch x, y along world +X, +Y on XY; +X, -Z on XZ; +Y, +Z on YZ) | construction plane name or id | {origin?: ",
+   "err": ""
+  },
+  "cmds_plain": {
+   "rc": 0,
+   "out": "[\n  {\n    \"disabled_reason\": null,\n    \"enabled\": true,\n    \"icon\": \"sketch\",\n    \"id\": \"sketch.create\",\n    \"label\": \"Create Sketch\",\n    \"panel\": \"CREATE\",\n    \"params\": \"plane: XY|XZ|YZ (sketch x, y along world +X, +Y on XY; +X, -Z on XZ; +Y, +Z on YZ) | construction plane name or id | {origin?: ",
+   "err": ""
+  }
+ },
+ "soundcraft-cli.exe": {
+  "cmds_json": {
+   "rc": 0,
+   "out": "[\n  {\n    \"id\": \"session.new\",\n    \"label\": \"New...\",\n    \"menu\": [\n      \"File\"\n    ],\n    \"shortcut\": \"Cmd+N\",\n    \"params\": \"{name?: 'Untitled', sample_rate?: 48000, bit_depth?: 24, template?: blank|demo}\",\n    \"enabled\": true,\n    \"disabled_reason\": null\n  },\n  {\n    \"id\": \"session.open\",\n    \"l",
+   "err": ""
+  },
+  "cmds_plain": {
+   "rc": 0,
+   "out": "session.new                          New...                             File\nsession.open                         Open Session...                    File\nsession.close                        Close Session                      File\nsession.save                         Save Session                    ",
+   "err": ""
+  }
+ },
+ "texturecraft-cli.exe": {
+  "cmds_json": {
+   "rc": 2,
+   "out": "",
+   "err": "texturecraft-cli commands: unknown option `--json`\n\ntexturecraft-cli: headless TextureCraft\n\nUSAGE:\n  texturecraft-cli --version\n  texturecraft-cli info <project.tcraft | mesh file | builtin:<id>>\n   "
+  },
+  "cmds_plain": {
+   "rc": 0,
+   "out": "edit.undo                    Undo                                 {steps?: 1 (as many as there are)} → {undone: the last step undone, steps}\nedit.redo                    Redo                                 {steps?: 1 (as many as there are)} → {redone: the last step redone, steps}\nedit.history      ",
+   "err": ""
+  }
+ },
+ "vectorcraft-cli.exe": {
+  "cmds_json": {
+   "rc": 0,
+   "out": "[\n  {\n    \"enabled\": true,\n    \"id\": \"file.new\",\n    \"label\": \"New…\",\n    \"menu\": [\n      \"File\"\n    ],\n    \"params\": \"{preset?: a name from file.newPresets (start from it; the other params change it), name?|title?: document name (default Untitled-N), width?: pt=612|\\\"210 mm\\\", height?: pt=792, unit",
+   "err": ""
+  },
+  "cmds_plain": {
+   "rc": 0,
+   "out": "[\n  {\n    \"enabled\": true,\n    \"id\": \"file.new\",\n    \"label\": \"New…\",\n    \"menu\": [\n      \"File\"\n    ],\n    \"params\": \"{preset?: a name from file.newPresets (start from it; the other params change it), name?|title?: document name (default Untitled-N), width?: pt=612|\\\"210 mm\\\", height?: pt=792, unit",
+   "err": ""
+  }
+ },
+ "wordcraft-cli.exe": {
+  "cmds_json": {
+   "rc": 0,
+   "out": "[\n  {\n    \"id\": \"text.insert\",\n    \"label\": \"Type Text\",\n    \"location\": \"Editing\",\n    \"mutates\": true,\n    \"params\": \"{\\\"text\\\": string, \\\"raw\\\"?: bool, \\\"paragraphs\\\"?: bool} (paragraphs: each line a paragraph, one undo step, at most 10000 lines)\",\n    \"shortcut\": \"\"\n  },\n  {\n    \"id\": \"text.newP",
+   "err": ""
+  },
+  "cmds_plain": {
+   "rc": 0,
+   "out": "text.insert                      Type Text                                                     Editing\ntext.newParagraph                New Paragraph                        Enter                    Editing\ntext.lineBreak                   Line Break                           Shift+Enter             ",
+   "err": ""
+  }
+ }
+}

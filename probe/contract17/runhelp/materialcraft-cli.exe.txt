@@ -1,0 +1,1 @@
+materialcraft-cli: unknown option `--help` for `run`

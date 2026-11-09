@@ -1,0 +1,35 @@
+texturecraft-cli: headless TextureCraft
+
+USAGE:
+  texturecraft-cli --version
+  texturecraft-cli info <project.tcraft | mesh file | builtin:<id>>
+      Texture sets, layers, triangles, materials and the UV report, as JSON.
+  texturecraft-cli commands [--filter <text>]
+      List the engine commands (id, label, params).
+  texturecraft-cli run <input> <command-id> [params-json] [-o <out.tcraft>]
+      Run one command and print its JSON result; -o saves the project.
+  texturecraft-cli batch <script.json>
+      Run [{"id", "params"}, ...] or {"open": <input>, "steps": [...], "save": <out.tcraft>}.
+  texturecraft-cli bake <input> [-o <out.tcraft>] [--resolution <px>] [--maps <id,id,...>]
+      Bake mesh maps for every texture set (a project is saved in place without -o).
+  texturecraft-cli export <input> <dir> [--preset <name>] [--format <ext>] [--padding <mode>] [--size <px>]
+      Export textures (default preset: Document channels + Normal + AO).
+  texturecraft-cli render <input> <out.png> [--size <W>x<H>] [--view 3d|2d] [--camera <name>] [--yaw <deg>]
+                   [--pitch <deg>] [--samples <n>] [--bounces <n>] [--cpu]
+      Render the viewport to PNG (needs a GPU or software adapter); --camera looks through a
+      camera saved in the project (camera.add); --samples path traces it instead (Rendering
+      mode), on the GPU when it has compute shaders, else (or with --cpu) on the CPU.
+  texturecraft-cli new <mesh file | builtin:<id>> <out.tcraft> [--resolution <px>] [--sample]
+      New project; --sample bakes and applies a smart material to every texture set. The
+      sample's mesh maps are baked at the resolution up to 1024 px (most of the file's size),
+      so a 2048 sample project is as large as a 1024 one.
+  texturecraft-cli mcp [--bridge <port>] [--token <token>] [--read-root <dir>] [--write-root <dir>]
+      MCP server on stdio: headless (file access only below the roots), or bridged to
+      `texturecraft --control <port>`. --automation-read-root / --automation-write-root are
+      the same as --read-root / --write-root (mcp and serve).
+  texturecraft-cli serve [--port <port>] [--read-root <dir>] [--write-root <dir>]
+      JSON lines ({"id","method","params"}) on stdio, or on 127.0.0.1:<port> with a token.
+
+<input> is a .tcraft project, a mesh file (.glb .gltf .fbx .dae .usd .usda .usdc .usdz .abc .obj .ply .stl)
+or builtin:<id> (material_ball, sphere, cube, rounded_cube, cylinder, torus, plane, crate, udim_plane).
+See docs/control-protocol.md.

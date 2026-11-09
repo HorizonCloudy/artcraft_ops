@@ -1,0 +1,36 @@
+materialcraft-cli: headless MaterialCraft
+
+USAGE:
+  materialcraft-cli --version
+  materialcraft-cli info <package.sbs | sample>
+      Graphs, nodes, outputs and cook results, as JSON.
+  materialcraft-cli commands [--filter <text>]
+      List the engine commands (id, label, params).
+  materialcraft-cli nodes [--filter <text>] [--category <text>]
+      List the node library (ids, ports, parameters).
+  materialcraft-cli run <input> <command-id> [params-json] [-o <out.sbs>]
+      Run one command and print its JSON result; -o saves the package.
+  materialcraft-cli batch <script.json>
+      Run [{"id", "params"}, ...] or {"open": <input>, "steps": [...], "save": <out.sbs>}.
+  materialcraft-cli new <template> <out.sbs> [--size <px>] [--name <name>]
+      A new package with one graph from a template (empty, pbr, atomics).
+  materialcraft-cli cook <input> [--graph <index>] [--set <input>=<value>]... [--full]
+      Cook a graph and print per-node timings and errors.
+  materialcraft-cli export <input> <dir> [--graph <index>] [--set <input>=<value>]... [--format <ext>]
+                   [--depth 8|16|32] [--size <px>] [--pattern <p>]
+      Cook at full size and write every output (png, jpg, tga, tif, bmp, webp, exr, hdr).
+  materialcraft-cli render <input> <out.png> [--size <W>x<H>] [--view 3d|2d] [--scene <id>] [--node <id>]
+                   [--yaw <deg>] [--pitch <deg>] [--graph <index>] [--set <input>=<value>]... [--full]
+                   [--tiling <n>] [--hq [--displacement <radii>]]
+      Render the material on a 3D scene (rounded_cube, cube, sphere, cylinder, plane, torus,
+      material_ball), or one node's output (--view 2d), to PNG. No GPU needed. The height output
+      raises the surface; --hq is a beauty render with a finer mesh, ambient occlusion and a key light.
+  materialcraft-cli mcp [--bridge <port>] [--token <token>] [--read-root <dir>] [--write-root <dir>]
+      MCP server on stdio: headless (file access only below the roots), or bridged to
+      `materialcraft --control <port>`. --automation-read-root / --automation-write-root are
+      the same as --read-root / --write-root (mcp and serve).
+  materialcraft-cli serve [--port <port>] [--read-root <dir>] [--write-root <dir>]
+      JSON lines ({"id","method","params"}) on stdio, or on 127.0.0.1:<port> with a token.
+
+<input> is an .sbs package or `sample` (the built-in atomic sample). Packages save as native SBS. --set gives a graph input a value
+(JSON, e.g. `--set roughness=0.4 --set tint="#aa7744"`) before cooking. See docs/control-protocol.md.

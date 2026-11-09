@@ -1,0 +1,30 @@
+Craft Anything on the command line: every tool, the MCP server, setup and doctor.
+
+Usage: craft-anything-cli.exe [OPTIONS] <COMMAND>
+
+Commands:
+  mcp           Run the MCP server on stdin/stdout
+  setup         Connect Craft Anything to your coding-agent apps
+  doctor        Check the install, registrations, engines, AI backends and the MCP server
+  uninstall     Remove Craft Anything's registrations and skill from agent apps
+  commands      List every tool
+  capabilities  What this install can do: toolsets, tool availability, engines
+  triage        Open a file and run a first look at it
+  report        Write a readable investigation report (Markdown or HTML) from findings and evidence
+  chat          Ask the AI agent a question about a target (streams to stdout)
+  rebuild       Study a website, app or game and have a coding agent rebuild it in a new project folder
+  ai            Manage AI backends
+  help          Print this message or the help of the given subcommand(s)
+
+Options:
+      --format <FORMAT>    Output format. `--output-format` always means this, even after a tool that has its own `--format` [default: json] [possible values: json, jsonl, md, text, csv, tsv]
+      --json               Shorthand for --format json
+      --project <PROJECT>  A project folder (`*.cany`): evidence, memory and the journal are kept there. Created if missing
+      --allow-run          Allow tools that run code or change a device without asking
+      --deep               Deep mode for this run only: tools may read a target's code, files and page source
+      --clean-room         Clean room for this run only, whatever Settings say: nothing inside a target is read
+  -h, --help               Print help
+  -V, --version            Print version
+
+Every tool is also a subcommand: `craft-anything-cli commands` lists them, `craft-anything-cli <tool> --help` shows its options.
+When a tool has its own --format option (core-target-open, ...), --format after the tool name goes to the tool; pick the output with --output-format (or --format before the tool name). `report` has no format option of its own: use `report --html` for HTML.

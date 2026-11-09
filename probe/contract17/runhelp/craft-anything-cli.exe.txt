@@ -1,0 +1,1 @@
+error: unknown command "run". Run `craft-anything-cli commands` to list tools, or --help for built-in commands.

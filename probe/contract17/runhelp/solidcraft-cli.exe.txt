@@ -1,0 +1,8 @@
+usage:
+  solidcraft-cli run <script.json|design.sc|part.step> [--in design.sc|part.step] [--out FILE]... [--save FILE] [--quiet] [--results] [--timings] [--profile] [--json-out FILE] [--allow-errors]
+                     [--param-check off|warn|strict]
+  solidcraft-cli run --in <design.sc|part.step> [--out FILE]...
+      (a timeline feature that fails fails the run and nothing is written; --allow-errors writes anyway)
+      (--param-check checks each step against its command's contract: warn reports on stderr, strict stops the run)
+      (--timings prints {timings: [{index, command, ms}], total_ms} for a script, with --results its results too;
+       --profile adds each command's profile: {boolean_ms, tessellate_ms, other_ms}, the kernel's share)

@@ -1,0 +1,76 @@
+# artcraft_ops —— 插件清单（代码根，含 [plugin] 段）
+#
+# 目录名必须 == [plugin].id（宿主唯一加载源：`.neko-plugin-installations\plugins\<id>\`，
+# `registry_service.py:362-380` 用 `root.glob("*/plugin.toml")` 扫描，无注册文件门控）。
+#
+# ⚠️ 宿主 CLI 校验器**完全不检查** `[[plugin.entries]]`（`validate_cmd.py:176`
+# 缺 `entries` 白名单），字段拼错**零报错**，唯一防线是 tests/test_manifest.py 的 AST 对账。
+# ⚠️ 绝不在此列 `__llm_tool__*`（动态注册 id，宿主不接受）。
+
+[plugin]
+id = "artcraft_ops"                        # 必须 == 目录名
+name = "ArtCraft 全家桶操控"
+description = "用一句话操控本机 ArtCraft 系列软件：检索命令、编排序列、无头执行并回传图片"
+short_description = "操控 ArtCraft 系列软件"
+keywords = ["修图", "调亮", "图层", "导出", "锐化", "PhotoCraft", "VectorCraft", "Craft Anything"]
+version = "1.0.0"
+type = "plugin"                             # 可省，默认就是 plugin
+entry = "plugin.plugins.artcraft_ops:ArtcraftOpsPlugin"   # ★ 必填（module:Class）
+
+[plugin.author]                             # ★ 必须是表，不能写字符串
+name = "neko-artcraft-ops"
+
+[plugin.sdk]                                # ★ 宿主 SDK_VERSION = 0.1.0（不是 app 的 0.9.1）
+recommended = ">=0.1.0,<0.2.0"
+supported = ">=0.1.0,<0.3.0"
+
+[plugin.store]
+enabled = true
+
+# ---------------------------------------------------------------------------
+# 六个入口：id 与 @plugin_entry(id=...) 逐字相等（漏写/拼错 → 面板 404）
+# timeout 单位秒；llm_result_fields 与装饰器保持一致（宿主以清单值为准）
+# ---------------------------------------------------------------------------
+[[plugin.entries]]
+id = "artcraft_ops_search_commands"
+name = "检索命令"
+timeout = 15
+llm_result_fields = ["commands", "app", "version", "total_matched", "hint"]
+
+[[plugin.entries]]
+id = "artcraft_ops_run_sequence"
+name = "执行序列"
+timeout = 10
+llm_result_fields = ["job_id", "status", "poll_with", "cancel_with"]
+
+[[plugin.entries]]
+id = "artcraft_ops_get_job"
+name = "查询任务状态"
+timeout = 15
+llm_result_fields = ["job_id", "status", "progress", "progress_label", "result_handle", "preview_url", "error_code", "error_message"]
+
+[[plugin.entries]]
+id = "artcraft_ops_cancel_job"
+name = "取消任务"
+timeout = 15
+llm_result_fields = ["job_id", "status"]
+
+[[plugin.entries]]
+id = "artcraft_ops_list_apps"
+name = "列出本机 App"
+timeout = 10
+llm_result_fields = ["apps"]
+
+# 本地 GUI 交接：只启动 + 传文件路径，不做 UI 自动化（Studio 无 CLI 二进制）
+[[plugin.entries]]
+id = "artcraft_ops_open_in_studio"
+name = "在 Studio 中打开"
+timeout = 10
+llm_result_fields = ["launched", "studio_available", "file_count", "handoff_verified", "exe_path", "note"]
+
+[plugin_runtime]
+enabled = true                              # ★ 必需：registry.py:1295-1325 据此决定是否加载
+auto_start = false                          # 首次 entry 才 lazy discovery，不随宿主启动 spawn
+startup_failure = "warn"                    # ★ 属于清单，不属于 @lifecycle 装饰器
+timeout = 30                                # startup 超时（≤300），不是入口超时
+# 业务段（[artcraft.*]）一律放 config.example.toml 顶层，不要挂在本段下面

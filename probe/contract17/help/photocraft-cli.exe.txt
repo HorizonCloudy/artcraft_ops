@@ -1,0 +1,18 @@
+photocraft-cli: headless PhotoCraft
+
+Usage: photocraft-cli <COMMAND>
+
+Commands:
+  convert   Convert between formats (.pcraft, .psd, .png, .jpg, .tif, .webp, .exr, …)
+  info      Print the document as JSON (size, mode, depth, layer tree)
+  run       Open a file (or start a new document), run engine commands in order, save the result
+  batch     Apply an action list to every image in a directory
+  droplet   Run a droplet (File › Automate › Create Droplet) on images and folders
+  commands  List the engine command registry
+  mcp       Run the MCP server on stdio (headless engine, or bridge to a running `photocraft --control <port>`)
+  serve     Keep one headless session open and answer JSON lines on stdio, or on 127.0.0.1:<PORT>
+  help      Print this message or the help of the given subcommand(s)
+
+Options:
+  -h, --help     Print help
+  -V, --version  Print version

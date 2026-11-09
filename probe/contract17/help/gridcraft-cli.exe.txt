@@ -1,0 +1,16 @@
+usage:
+  gridcraft-cli info <file> [--json]                      sheets, used ranges, tables, charts, names
+  gridcraft-cli convert <in> <out> [--sheet NAME]         xlsx/csv/tsv/json/html/pdf by extension
+  gridcraft-cli eval <formula> [--in FILE] [--sheet S] [--cell A1] [--json]
+  gridcraft-cli cat <file> [--range A1:D20] [--sheet S] [--formulas] [--csv]
+  gridcraft-cli check <file-or-dir>... [--json] [--tolerance 1e-9] [--max-report N]
+                     cached-value calc oracle + XLSX round-trip fidelity (exit 1 on any difference)
+  gridcraft-cli run [--in FILE | --sample NAME] [--cmd 'id={json}']... [--script FILE.jsonl]
+                     [--out FILE] [--print RANGE] [--quiet]
+                     a script line is id={json} or {"command": "id", "params": {…}};
+                     blank lines and lines starting with # or // are skipped
+  gridcraft-cli commands [--json] [--search X]
+  gridcraft-cli functions [--json] [--search X] [--category C]
+  gridcraft-cli mcp [--connect PORT] [--in FILE | --sample NAME]
+  gridcraft-cli send <port> <method> [json]
+  gridcraft-cli version

@@ -1,0 +1,257 @@
+{
+ "cadcraft-cli.exe": {
+  "app": "CADCraft",
+  "cli": "E:/Program Files\\Artcraft\\CADCraft\\cadcraft-cli.exe",
+  "cli_name": "cadcraft-cli.exe",
+  "version": {
+   "rc": 0,
+   "out": "cadcraft-cli 0.18.0 (32238e83c2c8bf643994132883e94bc96961f649)\n",
+   "err": ""
+  },
+  "help": {
+   "rc": 0,
+   "out": "cadcraft-cli: headless CADCraft\n\nUsage: cadcraft-cli <COMMAND>\n\nCommands:\n  info       Print a drawing's summary as JSON\n  convert    Convert a drawing; OUT's extension picks the format (dxf, dwg, dwt, svg, png, pdf)\n  run        Open drawings (or start a new one), run scripts and commands in order, save or export the result\n  commands   Print the command catalog as JSON\n  mcp        Run the MCP server on stdio: a headless drawing session, or a bridge to the running app\n  perf       Time the engine on a synthetic N-entity drawing (default 200000), or the canvas display-list build of a drawing, zoomed in step by step\n  sample     Write a built-in sample drawing\n  roundtrip  Open each DXF/DWG, save it as DXF and DWG, reopen and compare; writes report.md and report.json\n  help       Print this message or the help of the given subcommand(s)\n\nOptions:\n  -h, --help     Print help\n  -V, --version  Print version\n",
+   "err": ""
+  }
+ },
+ "craft-anything-cli.exe": {
+  "app": "Craft Anything",
+  "cli": "E:/Program Files\\Artcraft\\Craft Anything\\craft-anything-cli.exe",
+  "cli_name": "craft-anything-cli.exe",
+  "version": {
+   "rc": 0,
+   "out": "craft-anything-cli 0.5.0\n",
+   "err": ""
+  },
+  "help": {
+   "rc": 0,
+   "out": "Craft Anything on the command line: every tool, the MCP server, setup and doctor.\n\nUsage: craft-anything-cli.exe [OPTIONS] <COMMAND>\n\nCommands:\n  mcp           Run the MCP server on stdin/stdout\n  setup         Connect Craft Anything to your coding-agent apps\n  doctor        Check the install, registrations, engines, AI backends and the MCP server\n  uninstall     Remove Craft Anything's registrations and skill from agent apps\n  commands      List every tool\n  capabilities  What this install can do: toolsets, tool availability, engines\n  triage        Open a file and run a first look at it\n  report        Write a readable investigation report (Markdown or HTML) from findings and evidence\n  chat          Ask the AI agent a question about a target (streams to stdout)\n  rebuild       Study a website, app or game and have a coding agent rebuild it in a new project folder\n  ai            Manage AI backends\n  help          Print this message or the help of the given subcommand(s)\n\nOptions:\n      --format <FORMAT>    Output format. `--output-format` always means this, even after a tool that has its own `--format` [default: json] [possible values: json, jsonl, md, text, csv, tsv]\n      --js",
+   "err": ""
+  }
+ },
+ "deckcraft-cli.exe": {
+  "app": "DeckCraft",
+  "cli": "E:/Program Files\\Artcraft\\DeckCraft\\deckcraft-cli.exe",
+  "cli_name": "deckcraft-cli.exe",
+  "version": {
+   "rc": 0,
+   "out": "deckcraft-cli 0.16.0\n",
+   "err": ""
+  },
+  "help": {
+   "rc": 0,
+   "out": "deckcraft-cli works on DeckCraft presentations (.deckcraft, .pptx) without a window.\n\n  info               print a presentation's slides, layouts and theme as JSON\n  render             draw slides as PNG images\n  render-transition  draw frames of the transition into a slide as PNG images\n  convert            save a presentation in the format OUT's extension names\n  run                run commands on a presentation, then save or export it\n  commands           list the commands run can use, one per line\n  describe           explain one command and its parameters\n  app                run a command in the DeckCraft app started with --control\n  mcp                serve the commands to an agent over MCP on stdio\n  bench              time opening, drawing, saving and exporting a presentation\n  links              print the DeckCraft community and project links\n  --version          print the version\n\nA presentation is edited by running commands on it:\n\n  deckcraft-cli run --cmd 'slide.new={\"title\":\"Q3 results\"}' --save q3.deckcraft\n\n`deckcraft-cli help SUBCOMMAND`, or `deckcraft-cli SUBCOMMAND --help`, explains one subcommand;\n`deckcraft-cli help run` explains how to write a command.\n\nIf an",
+   "err": ""
+  }
+ },
+ "designcraft-cli.exe": {
+  "app": "DesignCraft",
+  "cli": "E:/Program Files\\Artcraft\\DesignCraft\\designcraft-cli.exe",
+  "cli_name": "designcraft-cli.exe",
+  "version": {
+   "rc": 0,
+   "out": "designcraft-cli 0.18.0\n",
+   "err": ""
+  },
+  "help": {
+   "rc": 0,
+   "out": "usage: designcraft-cli run [--in FILE | --sample] [--cmd ID[=JSON]]... [--page N] [--scale S] [--pdf-options JSON] [--export OUT] [--all-pages DIR]\n         (--page, --scale and --pdf-options apply to the exports that follow them)\n       designcraft-cli commands [FILTER]\n       designcraft-cli describe COMMAND\n       designcraft-cli script [FILE|-] [--in FILE | --sample] [--connect PORT] [--save OUT] [--export OUT] [--keep-going]\n       designcraft-cli app [--port PORT] COMMAND [JSON] | --method METHOD [JSON]\n       designcraft-cli mcp [--connect PORT] [--sample] [--automation-read-root DIR]... [--automation-write-root DIR]...\n         the roots confine every file the agent's commands read (open, placed images, data sources, libraries) and\n         write (save, export, package) to those folders, links followed. Each may be given more than once; a kind\n         left out grants none of its access.\n         They run the in-process server, so they conflict with --connect (a running app is not confined by them).\n       designcraft-cli perf [--pages N] [--runs N] [--strict]\n       designcraft-cli bench FILE [--runs N]\n       designcraft-cli validate-pdf FILE.pdf [--standard x4|x1a]  # bu",
+   "err": ""
+  }
+ },
+ "effectcraft-cli.exe": {
+  "app": "EffectCraft",
+  "cli": "E:/Program Files\\Artcraft\\EffectCraft\\effectcraft-cli.exe",
+  "cli_name": "effectcraft-cli.exe",
+  "version": {
+   "rc": 0,
+   "out": "effectcraft-cli 0.22.0\n",
+   "err": ""
+  },
+  "help": {
+   "rc": 0,
+   "out": "usage: effectcraft-cli <info|commands|exec|run|props|get|set|render-frame|render|script|mcp> [args] [--json]\n  info                                     project + engine summary\n  commands [--filter TEXT] [--enabled]     list engine commands\n  exec <command-id> [--params JSON]        run one engine command (exec --list: list them, as `commands`)\n  run <id> <json> [<id> <json> ...]        run several commands in order\n  run --args-file F                        the same, one argument per line of F (no command-line length limit)\n  run --commands FILE|-                    steps from FILE, or standard input for -: a JSON array of\n                                           {\"command\": ID, \"params\": {...}} (or \"id\" for \"command\"), or one\n                                           such object per line (JSON Lines); at most 64 MiB and 100000 steps.\n                                           Repeatable; run after the <id> <json> pairs and --args-file\n  props <comp> <layer> [--flat] [--time S] a layer's property tree with paths\n  get <comp> <layer> <path> [--time S]     read a property\n  set <comp> <layer> <path> <value> [--time S] [--expression E]\n  render-frame [--comp C] [--time S | --frame",
+   "err": ""
+  }
+ },
+ "figcraft-cli.exe": {
+  "app": "FigCraft",
+  "cli": "E:/Program Files\\Artcraft\\FigCraft\\figcraft-cli.exe",
+  "cli_name": "figcraft-cli.exe",
+  "version": {
+   "rc": 0,
+   "out": "figcraft-cli 0.16.0\n",
+   "err": ""
+  },
+  "help": {
+   "rc": 0,
+   "out": "FigCraft without a window\n\nFiles: .figcraft (native), .penpot (Penpot 2.x), .json (FigCraft or REST API file JSON), .fig (best effort; `info` lists what wasn't imported), .sketch (Sketch 48 or newer, best effort), .svg, .png/.jpg/.webp/.gif/.bmp (open as an image layer).\n\nUsage: figcraft-cli [OPTIONS] <COMMAND>\n\nCommands:\n  info      Pages, node counts, top-level frames, style/variable/image counts\n  export    Export frames, a layer or the whole file\n  convert   Convert by extension (.figcraft, .json, .svg, .png, .jpg, .webp, .pdf, .fig, .penpot)\n  render    Render the whole page with its background as png, jpg or webp\n  run       Run a script of commands in a headless session, one JSON result line per step\n  commands  List every command with its label, shortcut, undoable flag (*) and parameters\n  mcp       Serve MCP on stdio: headless, or attached to a running app\n  plugin    Publish plugins to a server's plugin directory\n  connect   Publish a code repository's component mappings (code connect) to a design file\n  perf      Measure the hot paths on synthetic documents and print Markdown tables\n  help      Print this message or the help of the given subcommand(s)\n\nOptions:\n      --n",
+   "err": ""
+  }
+ },
+ "filmcraft-cli.exe": {
+  "app": "FilmCraft",
+  "cli": "E:/Program Files\\Artcraft\\FilmCraft\\filmcraft-cli.exe",
+  "cli_name": "filmcraft-cli.exe",
+  "version": {
+   "rc": 0,
+   "out": "filmcraft-cli 0.18.0\n",
+   "err": ""
+  },
+  "help": {
+   "rc": 0,
+   "out": "filmcraft-cli: drive FilmCraft from the shell (headless engine, or the live app with --bridge)\n\nUSAGE\n  filmcraft-cli [OPTIONS] <SUBCOMMAND> [ARGS]\n\nSUBCOMMANDS\n  exec <id> [key=value ...]     run one command; prints its result as JSON\n  exec <id> '<json params>'     same, params as one JSON object\n  run <script.jsonl | ->        run commands, one {\"id\",\"params\"} per line (# comments ok), in\n                                order: file.exportMedia waits for its file before the next line\n                                (and before exit) unless its params say \"wait\": false\n  commands [filter] [--json]    list commands (id, label, shortcut, params)\n  describe <id>                 one command as JSON (menu, shortcut, params, enabled now)\n  inspect [project|sequence]    project tree or active sequence as JSON (default: both)\n  import <file>...              import media into the project\n  export <out> [--preset name] [--format f] [--range r] [--start s --end s] [--settings json]\n         [--gpu-rendering auto|off]\n         [--scale f] [--quality 0-100] [--no-audio] [--queue] [--allow-offline]\n                                export the active sequence and wait for it to finish: with an\n   ",
+   "err": ""
+  }
+ },
+ "gridcraft-cli.exe": {
+  "app": "GridCraft",
+  "cli": "E:/Program Files\\Artcraft\\GridCraft\\gridcraft-cli.exe",
+  "cli_name": "gridcraft-cli.exe",
+  "version": {
+   "rc": 0,
+   "out": "gridcraft-cli 0.17.0\n",
+   "err": ""
+  },
+  "help": {
+   "rc": 0,
+   "out": "usage:\n  gridcraft-cli info <file> [--json]                      sheets, used ranges, tables, charts, names\n  gridcraft-cli convert <in> <out> [--sheet NAME]         xlsx/csv/tsv/json/html/pdf by extension\n  gridcraft-cli eval <formula> [--in FILE] [--sheet S] [--cell A1] [--json]\n  gridcraft-cli cat <file> [--range A1:D20] [--sheet S] [--formulas] [--csv]\n  gridcraft-cli check <file-or-dir>... [--json] [--tolerance 1e-9] [--max-report N]\n                     cached-value calc oracle + XLSX round-trip fidelity (exit 1 on any difference)\n  gridcraft-cli run [--in FILE | --sample NAME] [--cmd 'id={json}']... [--script FILE.jsonl]\n                     [--out FILE] [--print RANGE] [--quiet]\n                     a script line is id={json} or {\"command\": \"id\", \"params\": {…}};\n                     blank lines and lines starting with # or // are skipped\n  gridcraft-cli commands [--json] [--search X]\n  gridcraft-cli functions [--json] [--search X] [--category C]\n  gridcraft-cli mcp [--connect PORT] [--in FILE | --sample NAME]\n  gridcraft-cli send <port> <method> [json]\n  gridcraft-cli version\n",
+   "err": ""
+  }
+ },
+ "lightcraft-cli.exe": {
+  "app": "LightCraft",
+  "cli": "E:/Program Files\\Artcraft\\LightCraft\\lightcraft-cli.exe",
+  "cli_name": "lightcraft-cli.exe",
+  "version": {
+   "rc": 0,
+   "out": "lightcraft-cli 0.19.0\n",
+   "err": ""
+  },
+  "help": {
+   "rc": 0,
+   "out": "lightcraft-cli — headless LightCraft (photo library + raw developer)\n\nUSAGE:\n  lightcraft-cli run [OPTIONS] COMMAND [key=value | '{json}']… [COMMAND …]…\n      Run one or more commands (ids from `commands`, or control-protocol methods such as\n      engine.commands / ui.inspect / ui.screenshot) and print one JSON line per command:\n      {\"command\", \"ok\", \"result\" | \"error\", \"ms\"}. A word without `=` starts the next\n      command; values are JSON when they parse (1, true, [1,2], {…}), else strings. Exit status\n      is non-zero when a command fails. Example:\n        lightcraft-cli run --import ~/Photos/a.jpg develop.set control=light.exposure value=0.7 \\\n            develop.auto app.export path=/tmp/a.jpg longEdge=1600\n      Options:\n        --demo            headless, the procedural demo library\n        --library DIR     headless, open (or create) a LightCraft library; edits are saved\n        --import PATH     headless, import a file or folder first (repeatable)\n        --connect [ADDR]  drive the running app (`lightcraft --control 7980`; default 127.0.0.1:7980)\n        --script FILE|-   also run JSON lines {\"command\": id, \"params\": {…}} (or {\"method\": …})\n        --keep-going      c",
+   "err": ""
+  }
+ },
+ "materialcraft-cli.exe": {
+  "app": "MaterialCraft",
+  "cli": "E:/Program Files\\Artcraft\\MaterialCraft\\materialcraft-cli.exe",
+  "cli_name": "materialcraft-cli.exe",
+  "version": {
+   "rc": 0,
+   "out": "materialcraft-cli 0.2.0 (a1bbd4a 2026-11-06)\n",
+   "err": ""
+  },
+  "help": {
+   "rc": 0,
+   "out": "materialcraft-cli: headless MaterialCraft\n\nUSAGE:\n  materialcraft-cli --version\n  materialcraft-cli info <package.sbs | sample>\n      Graphs, nodes, outputs and cook results, as JSON.\n  materialcraft-cli commands [--filter <text>]\n      List the engine commands (id, label, params).\n  materialcraft-cli nodes [--filter <text>] [--category <text>]\n      List the node library (ids, ports, parameters).\n  materialcraft-cli run <input> <command-id> [params-json] [-o <out.sbs>]\n      Run one command and print its JSON result; -o saves the package.\n  materialcraft-cli batch <script.json>\n      Run [{\"id\", \"params\"}, ...] or {\"open\": <input>, \"steps\": [...], \"save\": <out.sbs>}.\n  materialcraft-cli new <template> <out.sbs> [--size <px>] [--name <name>]\n      A new package with one graph from a template (empty, pbr, atomics).\n  materialcraft-cli cook <input> [--graph <index>] [--set <input>=<value>]... [--full]\n      Cook a graph and print per-node timings and errors.\n  materialcraft-cli export <input> <dir> [--graph <index>] [--set <input>=<value>]... [--format <ext>]\n                   [--depth 8|16|32] [--size <px>] [--pattern <p>]\n      Cook at full size and write every output (png, jpg, t",
+   "err": ""
+  }
+ },
+ "pdfcraft-cli.exe": {
+  "app": "PdfCraft",
+  "cli": "E:/Program Files\\Artcraft\\PdfCraft\\pdfcraft-cli.exe",
+  "cli_name": "pdfcraft-cli.exe",
+  "version": {
+   "rc": 0,
+   "out": "pdfcraft-cli 0.19.0\nDiscord: https://discord.gg/artcraft  (help and feedback)\nWeb:     https://getartcraft.com/apps/pdfcraft\nSource:  https://github.com/storytold/pdfcraft\n",
+   "err": ""
+  },
+  "help": {
+   "rc": 0,
+   "out": "pdfcraft-cli info   <file.pdf> [--password PW]            document summary as JSON\n                                                          (includes any declared PDF/A or PDF/UA level)\npdfcraft-cli render <file.pdf> --page N [--dpi 96] --out x.png   (.png, .jpg, .tif or .pam)\npdfcraft-cli text   <file.pdf> [--page N]                  extracted text (pages separated by form feeds)\npdfcraft-cli edit   <in.pdf> --out out.pdf [--rotate 1,3:90] [--delete 2,4] [--move 5:1]\n                      [--insert-blank 1] [--title T] [--author A] [--full]\n                      (options run in order; page numbers refer to the document after the earlier options)\npdfcraft-cli combine <a.pdf> <b.pdf> … --out combined.pdf\npdfcraft-cli extract <in.pdf> --pages 1,3,5-8 --out out.pdf    (pages and ranges, in the order given)\npdfcraft-cli split   <in.pdf> (--every N | --before 3,7) [--out-dir DIR]\npdfcraft-cli check  <files or dirs…> [--timeout 20] [--dpi 36] [--json out.json]\npdfcraft-cli audit  <file.pdf> [--password PW]            find faux redactions (fails when found)\npdfcraft-cli batch <files or dirs...> --steps convert,ocr,optimize --out-dir DIR\n                      [--recursive] [--root DIR] [-",
+   "err": ""
+  }
+ },
+ "photocraft-cli.exe": {
+  "app": "PhotoCraft",
+  "cli": "E:/Program Files\\Artcraft\\PhotoCraft\\photocraft-cli.exe",
+  "cli_name": "photocraft-cli.exe",
+  "version": {
+   "rc": 0,
+   "out": "photocraft-cli 0.21.0 (efb7ebd0c, 2026-11-06)\n",
+   "err": ""
+  },
+  "help": {
+   "rc": 0,
+   "out": "photocraft-cli: headless PhotoCraft\n\nUsage: photocraft-cli <COMMAND>\n\nCommands:\n  convert   Convert between formats (.pcraft, .psd, .png, .jpg, .tif, .webp, .exr, …)\n  info      Print the document as JSON (size, mode, depth, layer tree)\n  run       Open a file (or start a new document), run engine commands in order, save the result\n  batch     Apply an action list to every image in a directory\n  droplet   Run a droplet (File › Automate › Create Droplet) on images and folders\n  commands  List the engine command registry\n  mcp       Run the MCP server on stdio (headless engine, or bridge to a running `photocraft --control <port>`)\n  serve     Keep one headless session open and answer JSON lines on stdio, or on 127.0.0.1:<PORT>\n  help      Print this message or the help of the given subcommand(s)\n\nOptions:\n  -h, --help     Print help\n  -V, --version  Print version\n",
+   "err": ""
+  }
+ },
+ "solidcraft-cli.exe": {
+  "app": "SolidCraft",
+  "cli": "E:/Program Files\\Artcraft\\SolidCraft\\solidcraft-cli.exe",
+  "cli_name": "solidcraft-cli.exe",
+  "version": {
+   "rc": 0,
+   "out": "solidcraft-cli 0.30.1\n",
+   "err": ""
+  },
+  "help": {
+   "rc": 0,
+   "out": "usage:\n  solidcraft-cli run <script.json|design.sc|part.step> [--in design.sc|part.step] [--out FILE]... [--save FILE] [--quiet] [--results] [--timings] [--profile] [--json-out FILE] [--allow-errors]\n                     [--param-check off|warn|strict]\n  solidcraft-cli run --in <design.sc|part.step> [--out FILE]...\n      (a timeline feature that fails fails the run and nothing is written; --allow-errors writes anyway)\n      (--param-check checks each step against its command's contract: warn reports on stderr, strict stops the run)\n      (--timings prints {timings: [{index, command, ms}], total_ms} for a script, with --results its results too;\n       --profile adds each command's profile: {boolean_ms, tessellate_ms, other_ms}, the kernel's share)\n  solidcraft-cli eval <script.json|design.sc|part.step> [--in design.sc|part.step] [--json-out FILE]     (alias: inspect)\n  solidcraft-cli eval --in <script.json|design.sc|part.step> [--json-out FILE]\n      (with both inputs, runs the positional script on --in before measuring; does not automatically save the modified design)\n      (--json-out FILE writes the JSON that run (with --results, else the measurement) and eval print to FILE inste",
+   "err": ""
+  }
+ },
+ "soundcraft-cli.exe": {
+  "app": "SoundCraft",
+  "cli": "E:/Program Files\\Artcraft\\SoundCraft\\soundcraft-cli.exe",
+  "cli_name": "soundcraft-cli.exe",
+  "version": {
+   "rc": 0,
+   "out": "soundcraft-cli 0.18.0 (windows x86_64)\n",
+   "err": ""
+  },
+  "help": {
+   "rc": 0,
+   "out": "soundcraft-cli: SoundCraft without a window\n\nUsage: soundcraft-cli <COMMAND>\n\nCommands:\n  info      Print an audio file's format as JSON, or a .scraft session's summary\n  convert   Convert an audio file: resample, change the bit depth, normalize\n  run       Run engine commands on a new, demo or saved session\n  script    Run a file of engine commands, one `ID JSON` per line\n  commands  List the engine commands\n  describe  Print one engine command's details as JSON\n  app       Call a running app's control channel\n  mcp       Serve MCP on stdin and stdout\n  parity    Print the parity report (markdown)\n  plugins   List the built-in plugins\n  help      Print this message or the help of the given subcommand(s)\n\nOptions:\n  -h, --help     Print help\n  -V, --version  Print version\n",
+   "err": ""
+  }
+ },
+ "texturecraft-cli.exe": {
+  "app": "TextureCraft",
+  "cli": "E:/Program Files\\Artcraft\\TextureCraft\\texturecraft-cli.exe",
+  "cli_name": "texturecraft-cli.exe",
+  "version": {
+   "rc": 0,
+   "out": "TextureCraft 0.4.0 (16e9d21 2026-11-06)\n",
+   "err": ""
+  },
+  "help": {
+   "rc": 0,
+   "out": "texturecraft-cli: headless TextureCraft\n\nUSAGE:\n  texturecraft-cli --version\n  texturecraft-cli info <project.tcraft | mesh file | builtin:<id>>\n      Texture sets, layers, triangles, materials and the UV report, as JSON.\n  texturecraft-cli commands [--filter <text>]\n      List the engine commands (id, label, params).\n  texturecraft-cli run <input> <command-id> [params-json] [-o <out.tcraft>]\n      Run one command and print its JSON result; -o saves the project.\n  texturecraft-cli batch <script.json>\n      Run [{\"id\", \"params\"}, ...] or {\"open\": <input>, \"steps\": [...], \"save\": <out.tcraft>}.\n  texturecraft-cli bake <input> [-o <out.tcraft>] [--resolution <px>] [--maps <id,id,...>]\n      Bake mesh maps for every texture set (a project is saved in place without -o).\n  texturecraft-cli export <input> <dir> [--preset <name>] [--format <ext>] [--padding <mode>] [--size <px>]\n      Export textures (default preset: Document channels + Normal + AO).\n  texturecraft-cli render <input> <out.png> [--size <W>x<H>] [--view 3d|2d] [--camera <name>] [--yaw <deg>]\n                   [--pitch <deg>] [--samples <n>] [--bounces <n>] [--cpu]\n      Render the viewport to PNG (needs a GPU or software ad",
+   "err": ""
+  }
+ },
+ "vectorcraft-cli.exe": {
+  "app": "VectorCraft",
+  "cli": "E:/Program Files\\Artcraft\\VectorCraft\\vectorcraft-cli.exe",
+  "cli_name": "vectorcraft-cli.exe",
+  "version": {
+   "rc": 0,
+   "out": "vectorcraft-cli 0.22.0\n",
+   "err": ""
+  },
+  "help": {
+   "rc": 0,
+   "out": "vectorcraft-cli — VectorCraft automation\n\nUSAGE:\n  vectorcraft-cli mcp [--connect ADDR | --headless] [--automation-read-root DIR]... [--automation-write-root DIR]...\n      Run the MCP server on stdio. Default: connect to a running app at 127.0.0.1:7979\n      (vectorcraft --control 7979), falling back to a headless in-process session.\n      --automation-read-root / --automation-write-root confine the files the agent's commands read\n      (open, place, relink, library loads…) and write (save, export, package, library saves…) to\n      DIR, links followed; each may be given more than once, a path inside any of its folders being\n      allowed, and a kind left out grants none of its access. They imply --headless: a running app\n      enforces its own (vectorcraft --control PORT --automation-read-root DIR …).\n\n  vectorcraft-cli run [--in FILE] [--cmd ID [--params JSON] | --commands FILE|-]... [--export FILE]... [--scale N] [--ppi N]\n      Headless batch: open FILE (any readable format) or start a new document, run commands in\n      order, export each FILE in the format its extension picks (see Writable formats; a .ait FILE\n      is a template, written as file.saveAsTemplate writes it). Ras",
+   "err": ""
+  }
+ },
+ "wordcraft-cli.exe": {
+  "app": "WordCraft",
+  "cli": "E:/Program Files\\Artcraft\\WordCraft\\wordcraft-cli.exe",
+  "cli_name": "wordcraft-cli.exe",
+  "version": {
+   "rc": 0,
+   "out": "wordcraft-cli 0.16.0\n",
+   "err": ""
+  },
+  "help": {
+   "rc": 0,
+   "out": "wordcraft-cli — WordCraft from the command line\n\nUSAGE:\n  wordcraft-cli convert <in> <out> [--markup] [--update-fields] [--format wordml2003|flatopc]\n                                              convert between formats (docx, doc [read], pdf, odt, rtf, html, md, tex, txt, json, png,\n                                              xml); --update-fields refreshes unlocked fields before saving;\n                                              an .xml file is a Word XML Document (Flat OPC), or with\n                                              --format wordml2003 a Word 2003 XML Document;\n                                              --markup (Print Markup): comments beside each page and\n                                              tracked changes in pdf/png, a comment list in html/md/txt\n  wordcraft-cli info <file>                   pages, words, paragraphs, properties (JSON)\n  wordcraft-cli text <file>                   plain text\n  wordcraft-cli inspect <file>                document structure (JSON)\n  wordcraft-cli render <file> <out.png> [--page N] [--scale S]\n  wordcraft-cli run [--file F | --template T] [--script FILE|-] --cmd 'id={json}' [--cmd …]\n                    [--save OUT] ",
+   "err": ""
+  }
+ }
+}

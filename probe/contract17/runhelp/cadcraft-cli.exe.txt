@@ -1,0 +1,71 @@
+Open drawings (or start a new one), run scripts and commands in order, save or export the result
+
+Drawings open in the order given, and the last one is current; without any, a new imperial drawing is used. --script, --script-file and --cmd steps run in the order given, and each --cmd prints its JSON result on one line (JSON lines); a command with no result prints nothing. An image --export (png 2400x1600, svg, pdf) shows model space: the current view if the steps changed it (zoom, pan, view.set…), otherwise the drawing extents, unless --window or --view says otherwise.
+
+Usage: cadcraft-cli run [OPTIONS] [FILE]...
+
+Arguments:
+  [FILE]...
+          Drawings to open (dxf, dwg, svg, svgz)
+
+Options:
+      --sample
+          Open the built-in sample drawing
+
+      --metric
+          Start a new metric drawing
+
+      --script <TEXT>
+          Command-line script text to run (`\n` separates lines)
+
+      --script-file <F.scr>
+          A script file (.scr) to run
+
+      --cmd <id {json}>
+          An engine command and its JSON parameters (default {}); see "--cmd chaining" in --help
+
+      --save <OUT.dxf>
+          Save the drawing to this file; its extension picks the format (dxf, dwg, dwt, svg, png, pdf)
+
+      --export <OUT.png>
+          Export the drawing to this file; its extension picks the format (dxf, dwg, dwt, svg, png, pdf)
+
+      --window <x0,y0,x1,y1>
+          Show this rectangle (drawing units, x0<x1, y0<y1), centred and scaled to fit the image without distortion. A negative x0 needs the `=` form: --window=-10,0,10,5
+
+      --view <extents|current>
+          What part of model space the image shows (case-insensitive)
+
+          Possible values:
+          - extents: Always fit the drawing extents
+          - current: The current view, as last set by zoom, pan or view.set (a freshly opened drawing's view is its extents plus a 10% margin)
+
+      --in-place
+          Allow an output that is an input file, replacing the original
+
+  -h, --help
+          Print help (see a summary with '-h')
+
+Settings:
+      --config-dir <DIR>
+          The settings folder; plotter configurations are in its `plotters` folder (default: the platform's settings folder). An empty value means no settings folder
+          
+          [env: CADCRAFT_CONFIG_DIR=]
+
+      --fontalt <FONT>
+          The font that replaces a missing one (FONTALT)
+          
+          [env: CADCRAFT_FONTALT=]
+
+      --fontfallback <FONTS>
+          The fonts tried, in order, for characters a font lacks, comma-separated (FONTFALLBACK)
+          
+          [env: CADCRAFT_FONTFALLBACK=]
+
+--cmd chaining:
+  A --cmd parameter value of exactly "{last}" is replaced with the last object handle an
+  earlier --cmd in the same run returned, so a command can act on what the previous one made:
+    --cmd 'mview {"p1":[20,20],"p2":[200,150]}'        prints {"viewports":["100"]}
+    --cmd 'viewport.set {"handle":"{last}","scale":1}' changes viewport 100
+  It works in any parameter, at any depth (e.g. "handles":["{last}"]); every other string is
+  passed unchanged. With no earlier returned handle the run fails and says so.

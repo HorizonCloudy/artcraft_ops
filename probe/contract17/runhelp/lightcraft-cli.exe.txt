@@ -1,0 +1,1 @@
+lightcraft-cli: unknown option `--help`

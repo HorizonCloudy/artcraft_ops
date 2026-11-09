@@ -1,0 +1,24 @@
+deckcraft-cli works on DeckCraft presentations (.deckcraft, .pptx) without a window.
+
+  info               print a presentation's slides, layouts and theme as JSON
+  render             draw slides as PNG images
+  render-transition  draw frames of the transition into a slide as PNG images
+  convert            save a presentation in the format OUT's extension names
+  run                run commands on a presentation, then save or export it
+  commands           list the commands run can use, one per line
+  describe           explain one command and its parameters
+  app                run a command in the DeckCraft app started with --control
+  mcp                serve the commands to an agent over MCP on stdio
+  bench              time opening, drawing, saving and exporting a presentation
+  links              print the DeckCraft community and project links
+  --version          print the version
+
+A presentation is edited by running commands on it:
+
+  deckcraft-cli run --cmd 'slide.new={"title":"Q3 results"}' --save q3.deckcraft
+
+`deckcraft-cli help SUBCOMMAND`, or `deckcraft-cli SUBCOMMAND --help`, explains one subcommand;
+`deckcraft-cli help run` explains how to write a command.
+
+If an output reader closes early, run, render, render-transition and convert continue; their exit
+status reflects the work, not output delivery. Stop the process to cancel them.

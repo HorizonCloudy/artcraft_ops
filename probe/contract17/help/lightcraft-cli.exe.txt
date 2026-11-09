@@ -1,0 +1,91 @@
+lightcraft-cli — headless LightCraft (photo library + raw developer)
+
+USAGE:
+  lightcraft-cli run [OPTIONS] COMMAND [key=value | '{json}']… [COMMAND …]…
+      Run one or more commands (ids from `commands`, or control-protocol methods such as
+      engine.commands / ui.inspect / ui.screenshot) and print one JSON line per command:
+      {"command", "ok", "result" | "error", "ms"}. A word without `=` starts the next
+      command; values are JSON when they parse (1, true, [1,2], {…}), else strings. Exit status
+      is non-zero when a command fails. Example:
+        lightcraft-cli run --import ~/Photos/a.jpg develop.set control=light.exposure value=0.7 \
+            develop.auto app.export path=/tmp/a.jpg longEdge=1600
+      Options:
+        --demo            headless, the procedural demo library
+        --library DIR     headless, open (or create) a LightCraft library; edits are saved
+        --import PATH     headless, import a file or folder first (repeatable)
+        --connect [ADDR]  drive the running app (`lightcraft --control 7980`; default 127.0.0.1:7980)
+        --script FILE|-   also run JSON lines {"command": id, "params": {…}} (or {"method": …})
+        --keep-going      continue after a failed command
+  lightcraft-cli mcp [OPTIONS] [FILES/FOLDERS…]
+      MCP server (JSON-RPC 2.0 over stdio). Headless by default: an in-process session with the
+      given files imported. Options:
+        --connect [ADDR]  drive a running app instead (`lightcraft --control 7980`; default 127.0.0.1:7980)
+        --demo            headless: start with the procedurally generated demo library
+        --library DIR     headless: open (or create) a persistent LightCraft library; edits are saved
+        --compact         list only the helper tools (every command stays reachable via run_command)
+  lightcraft-cli render <IN> -o <OUT> [OPTIONS]
+      Develop one file and export it (.jpg, .png, .tif, .webp, .avif, .jxl, .psd or .dng by extension) with the
+      same encoder as the app's Export dialog. Options:
+        --set CONTROL=VALUE  set a develop slider, repeatable (e.g. --set light.exposure=0.5)
+        --settings FILE      merge a partial develop-settings JSON file, or apply the one preset of a
+                             .lcpreset (preset.export) or XMP preset
+        --preset ID          apply a preset (see `commands`/presets.list)
+        --size N             long edge in pixels (default: full size, cropped)
+        --quality Q          JPEG/AVIF/JPEG XL quality 1..100 (default 92)
+        --opt KEY=VALUE      any export option of `app.export`, repeatable (VALUE is JSON or a
+                             string), e.g. --opt colorSpace=displayP3 --opt bitDepth=16
+                             --opt percent=50 --opt shortEdge=1080 --opt ppi=300
+                             --opt format=original (copy + XMP sidecar) --opt metadata=none
+                             --opt addToPhotos=true --opt photosAlbum=NAME (macOS: then add
+                             the file to Apple Photos, into that album)
+  lightcraft-cli snapshot [OPTIONS] [FILES/FOLDERS…]
+      Run the full app UI headlessly (no window, no GPU: CPU-rasterized egui) and write PNGs.
+      Options:
+        --demo            the procedural demo library (default unless --library or FILES)
+        --library DIR     open (or create) a LightCraft library
+        --script FILE     JSON-lines control-protocol requests (docs/control-protocol.md), one
+                          per line: {"method": "ui.set", "params": {"view": "detail"}}.
+                          Replies go to stdout. `ui.screenshot` without a path writes -o (then
+                          OUT-2.png, OUT-3.png…); `ui.settle {timeoutMs?}` waits for renders.
+                          A failed request ("ok": false) does not stop the script, but the exit
+                          status is non-zero when any request failed.
+        -o, --output OUT  PNG path (a final screenshot is written here if the script took none)
+        --size WxH        window size in points (default 1600x1000)
+        --scale S         pixels per point (default 1)
+  lightcraft-cli merge hdr|panorama|hdr-panorama|hdr-batch [OPTIONS] FILES…
+      Photo Merge: writes <first>-HDR.dng / -Pano.dng / -HDR-Pano.dng next to the first file and
+      prints the result as JSON. hdr-batch merges each bracket set among the files (photos taken
+      less than a second apart at different exposures), e.g. a whole folder. Options:
+        --deghost none|low|medium|high   --no-align   --bracket N (HDR panorama)
+        --projection auto|spherical|cylindrical|perspective   --boundary-warp 0..100
+        --auto-crop   --fill-edges   --no-auto-settings
+        --preview OUT.png   only render a ≤ 1024 px preview (nothing written next to the files)
+  lightcraft-cli synth-merge hdr|panorama -o DIR
+      Write synthetic merge inputs (procedural scene; bracketed DNGs or overlapping PNG views).
+  lightcraft-cli denoise-serve [OPTIONS]
+      Run AI Denoise tiles for LightCraft on other computers (LIGHTCRAFT_DENOISE_URL=<this host>:7990 and
+      LIGHTCRAFT_DENOISE_TOKEN there; see docs/denoise.md). Serves the installed model selected in Settings,
+      on this computer's graphics card when it can run it, else the CPU. Plain TCP: listen on a VPN/LAN
+      address (e.g. the Tailscale IP) or firewall the port to it. Options:
+        --model ID        an installed model other than the selected one
+        --models DIR      the models folder (default: LIGHTCRAFT_DENOISE_MODELS, else this user's)
+        --listen ADDR     address:port to listen on (default 127.0.0.1:7990)
+        --token-env VAR   environment variable holding the shared token, ≥ 16 characters
+                          (default LIGHTCRAFT_DENOISE_TOKEN)
+        --run-on WHERE    auto (default), gpu or cpu
+        --max-connections N   concurrent clients (default 8)
+  lightcraft-cli commands [--json]   list every command id with its parameters
+  lightcraft-cli controls [--json]   list every develop control id with its range
+  lightcraft-cli calibrate [--max N] [--out DIR] FOLDERS/FILES…
+      Fit a colour profile per camera model from raw files and their embedded camera JPEGs
+      (Sony ARW, Nikon NEF, Fujifilm RAF, Canon CRW): up to N files spread over the folders (default 300; 0 = all), pooled per
+      model, written as <model>.json to DIR (default: the profiles folder LightCraft reads,
+      <config>/camera-profiles, or $LIGHTCRAFT_CAMERA_PROFILES). Raws of a profiled model then
+      take their colour from the profile and only their tone from their own JPEG.
+  lightcraft-cli bench-cull FOLDER [--files K] [--n N] [--copy M] [--work DIR] [--json FILE]
+      Time what culling a shoot costs on its own files: reading the folder (browse), the first
+      screen of grid thumbnails, camera previews at loupe sizes and full size, a loupe render,
+      rating, and importing N files in place (default 2000) and copying M (default 200). Libraries
+      are made in a new folder under DIR (default: the temp folder); nothing is written next to the
+      photos. --files K reads only the first K files by name (a sample of a slow network folder).
+  lightcraft-cli --version | --help

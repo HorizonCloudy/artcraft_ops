@@ -1,0 +1,20 @@
+soundcraft-cli: SoundCraft without a window
+
+Usage: soundcraft-cli <COMMAND>
+
+Commands:
+  info      Print an audio file's format as JSON, or a .scraft session's summary
+  convert   Convert an audio file: resample, change the bit depth, normalize
+  run       Run engine commands on a new, demo or saved session
+  script    Run a file of engine commands, one `ID JSON` per line
+  commands  List the engine commands
+  describe  Print one engine command's details as JSON
+  app       Call a running app's control channel
+  mcp       Serve MCP on stdin and stdout
+  parity    Print the parity report (markdown)
+  plugins   List the built-in plugins
+  help      Print this message or the help of the given subcommand(s)
+
+Options:
+  -h, --help     Print help
+  -V, --version  Print version

@@ -1,0 +1,21 @@
+# artcraft_ops 红阶段测试依赖（本机已具备，无需 pip install）
+#
+# 实测环境（2026-11-07）：
+#   python            3.13.14  /  C:\Python314\python.exe 3.14.10
+#   pytest            9.2.0    /  9.1.1
+#   pytest-asyncio    1.4.1.post1 / 1.4.0
+#   tomllib           标准库内置（Python >= 3.11）
+#
+# 说明：
+#   * 所有异步测试一律用 asyncio.run(...) 包装，**不依赖 pytest-asyncio 的
+#     asyncio_mode 配置**，跨 3.13/3.14 与 pytest 9.1/9.2 均可直接运行。
+#   * pytest-asyncio 仅为消除 pytest.ini 里 asyncio_default_fixture_loop_scope
+#     的弃用警告而列出；若环境未安装，pytest 只会给一条 Unknown config option
+#     警告，不影响收集与结果。
+#   * 其余依赖全部是 Python 标准库：ast / tomllib / asyncio / unittest.mock /
+#     dataclasses / pathlib / json / hashlib / tempfile / importlib。
+#   * 不联网、不写宿主安装目录、不启动真实 photocraft-cli.exe（唯一真实冒烟
+#     默认 skip，需显式 ARTCRAFT_OPS_RUN_INTEGRATION=1 才启用）。
+
+pytest>=8.0
+pytest-asyncio>=0.23

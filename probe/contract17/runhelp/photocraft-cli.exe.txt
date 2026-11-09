@@ -1,0 +1,73 @@
+Open a file (or start a new document), run engine commands in order, save the result
+
+Prints each command's JSON result. Give exactly one of <FILE> or --new, and at least one --cmd or --out. An --out that is the <FILE> is refused, as the result would replace the original; --in-place allows it.
+
+Usage: photocraft-cli run [OPTIONS] <FILE|--new <JSON>> <--cmd <ID>|--out <FILE>>
+
+Arguments:
+  [FILE]
+          The document to open
+
+Options:
+      --new <JSON>
+          Start from a new document with these JSON parameters instead of opening a file
+
+      --cmd <ID>
+          An engine command to run; repeat for several, run in order
+
+      --params <JSON>
+          JSON parameters for the --cmd before it (default {})
+
+      --out <FILE>
+          Save the result to this file
+
+      --in-place
+          Allow an --out that is the <FILE>, replacing the original
+
+      --approve-high-memory
+          Explicitly approve high-memory PSD/PSB imports within the hard memory budget
+
+      --gpu
+          Prefer GPU rendering, falling back to CPU when unavailable or unsupported
+
+      --no-gpu
+          Use CPU rendering, overriding PHOTOCRAFT_GPU
+
+      --format <EXT>
+          Output format, overriding the output's extension (png, jpg, tif, webp, …)
+
+      --quality <1-100>
+          JPEG or WebP quality, 1-100. A WebP written with a quality is lossy, without one lossless
+
+      --tiff-layers
+          Keep the layers in TIFF output (Photoshop layer data); TIFF output is flat without it
+
+      --tiff-compression <none|lzw|zip>
+          Compress TIFF output: none (the default), lzw or zip
+
+      --tiff-transparency <on|off>
+          TIFF Save Transparency: on keeps the transparency (ahead of any alpha or spot channels), off composites the image over white. Without it: kept unless the document has alpha or spot channels
+
+      --tiff-pyramid
+          Also write a TIFF image pyramid: half-size copies after the full image
+
+      --tga-bits <24|32>
+          A TGA's bits per pixel: 32 writes the alpha channel (or else the transparency) as its alpha, 24 none. Without it: 32 with an alpha channel or transparency, else 24
+
+      --dpx-bits <8|10|12|16>
+          A DPX's bits per sample. Without it: 8 for an 8-bit document, else 16
+
+      --dds-compression <none|bc1|bc2|bc3>
+          A DDS texture's compression: none (uncompressed, the default), bc1 (DXT1: alpha on or off), bc2 (DXT3) or bc3 (DXT5)
+
+      --dds-mipmaps
+          Also write a DDS texture's full mip chain
+
+      --jpeg-format <baseline|optimized|progressive>
+          A JPEG's scans, as JPEG Options picks them: baseline (the default), optimized (Huffman tables fitted to the image; RGB is written 4:2:0 and keeps the standard tables, so only Gray and CMYK shrink) or progressive
+
+      --pcraft-full-composite
+          Request the flattened document at its canvas size in .pcraft output as composite/full.png; it may be omitted. Check the manifest's full_composite member
+
+  -h, --help
+          Print help (see a summary with '-h')

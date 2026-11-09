@@ -1,0 +1,28 @@
+Run a script of commands in a headless session, one JSON result line per step
+
+The script is a JSON array (or JSON lines) of {"command": id, "params": {...}}, run as one all-or-nothing undo step.
+
+Usage: figcraft-cli run [OPTIONS] <SCRIPT.json|SCRIPT.jsonl>
+
+Arguments:
+  <SCRIPT.json|SCRIPT.jsonl>
+          The script to run
+
+Options:
+      --in <FILE>
+          Open this file first instead of a new document
+
+      --no-system-fonts
+          Lay text out with the fonts built into FigCraft only, for renders that match on every machine (or set FIGCRAFT_NO_SYSTEM_FONTS=1). Otherwise installed fonts are indexed the first time text is laid out, as in the app
+
+      --out <FILE>
+          Save the result here, by extension
+
+      --automation-read-root <DIR>
+          Confine file access: a folder that may be read (repeatable; it must exist)
+
+      --automation-write-root <DIR>
+          Confine file access: a folder that may be read and written (repeatable; it must exist)
+
+  -h, --help
+          Print help (see a summary with '-h')

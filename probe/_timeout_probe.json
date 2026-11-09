@@ -1,0 +1,537 @@
+{
+  "command": "inspect",
+  "plugin_dir": "C:\\Users\\54301\\WorkBuddy\\2026-11-07-22-33-50\\probe\\_timeout_probe",
+  "ok": true,
+  "mode": {
+    "mode": "real",
+    "reason": "plugin.sdk.plugin imported successfully",
+    "sdk_version": "0.1.0",
+    "sdk_path": "D:\\N.E.K.O",
+    "searched": [
+      "D:\\N.E.K.O",
+      "C:\\Users\\54301\\WorkBuddy\\2026-11-04-21-16-11",
+      "C:\\Users\\54301\\WorkBuddy\\2026-11-04-21-16-11\\neko-src",
+      "C:\\Users\\54301\\WorkBuddy\\2026-11-04-21-16-11\\neko-runtime-sandbox",
+      "C:\\Users\\54301\\WorkBuddy\\2026-11-04-21-16-11\\neko-runtime-sandbox\\neko-src"
+    ],
+    "import_error": null
+  },
+  "manifest": {
+    "id": "artcraft_ops",
+    "name": "ArtCraft 全家桶操控",
+    "version": "1.0.0",
+    "entry": "plugin.plugins.artcraft_ops:ArtcraftOpsPlugin",
+    "description": "用一句话操控本机 ArtCraft 系列软件：检索命令、编排序列、无头执行并回传图片",
+    "keywords": [
+      "修图",
+      "调亮",
+      "图层",
+      "导出",
+      "锐化",
+      "PhotoCraft",
+      "VectorCraft",
+      "Craft Anything"
+    ],
+    "plugin_runtime": {
+      "enabled": true,
+      "auto_start": false,
+      "startup_failure": "warn",
+      "timeout": 30
+    },
+    "path": "C:\\Users\\54301\\WorkBuddy\\2026-11-07-22-33-50\\probe\\_timeout_probe\\plugin.toml"
+  },
+  "plugin_class": "ArtcraftOpsPlugin",
+  "plugin_class_has_neko_tag": true,
+  "entries": {
+    "artcraft_ops_cancel_job": {
+      "name": "取消任务",
+      "event_type": "plugin_entry",
+      "kind": "action",
+      "auto_start": false,
+      "timeout": 15.0,
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "job_id": {
+            "default": null
+          }
+        }
+      },
+      "llm_result_fields": [
+        "job_id",
+        "status"
+      ],
+      "quick_action": false,
+      "async": true,
+      "interval_seconds": null
+    },
+    "artcraft_ops_get_job": {
+      "name": "查询任务状态",
+      "event_type": "plugin_entry",
+      "kind": "action",
+      "auto_start": false,
+      "timeout": 15.0,
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "job_id": {
+            "default": null
+          }
+        }
+      },
+      "llm_result_fields": [
+        "job_id",
+        "status",
+        "progress",
+        "progress_label",
+        "result_handle",
+        "preview_url",
+        "error_code",
+        "error_message"
+      ],
+      "quick_action": false,
+      "async": true,
+      "interval_seconds": null
+    },
+    "artcraft_ops_list_apps": {
+      "name": "列出本机 App",
+      "event_type": "plugin_entry",
+      "kind": "action",
+      "auto_start": false,
+      "timeout": 10.0,
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {}
+      },
+      "llm_result_fields": [
+        "apps"
+      ],
+      "quick_action": false,
+      "async": true,
+      "interval_seconds": null
+    },
+    "artcraft_ops_run_sequence": {
+      "name": "执行序列",
+      "event_type": "plugin_entry",
+      "kind": "action",
+      "auto_start": false,
+      "timeout": 10.0,
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "app": {
+            "default": null
+          },
+          "steps": {
+            "default": null
+          },
+          "input_file": {
+            "default": null
+          },
+          "new_doc": {
+            "default": null
+          },
+          "out_file": {
+            "default": null
+          },
+          "inspect": {
+            "default": null
+          }
+        }
+      },
+      "llm_result_fields": [
+        "job_id",
+        "status",
+        "poll_with",
+        "cancel_with"
+      ],
+      "quick_action": false,
+      "async": true,
+      "interval_seconds": null
+    },
+    "artcraft_ops_search_commands": {
+      "name": "检索命令",
+      "event_type": "plugin_entry",
+      "kind": "action",
+      "auto_start": false,
+      "timeout": 60.0,
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "default": null
+          },
+          "app": {
+            "default": null
+          },
+          "top_k": {
+            "default": null
+          }
+        }
+      },
+      "llm_result_fields": [
+        "commands",
+        "app",
+        "version",
+        "total_matched",
+        "hint"
+      ],
+      "quick_action": false,
+      "async": true,
+      "interval_seconds": null
+    },
+    "shutdown": {
+      "name": "shutdown",
+      "event_type": "lifecycle",
+      "kind": "lifecycle",
+      "auto_start": false,
+      "timeout": null,
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {}
+      },
+      "llm_result_fields": [],
+      "quick_action": false,
+      "async": true,
+      "interval_seconds": null
+    },
+    "startup": {
+      "name": "startup",
+      "event_type": "lifecycle",
+      "kind": "lifecycle",
+      "auto_start": false,
+      "timeout": null,
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {}
+      },
+      "llm_result_fields": [],
+      "quick_action": false,
+      "async": true,
+      "interval_seconds": null
+    },
+    "__llm_tool__artcraft_ops_cancel_job": {
+      "name": "artcraft_ops_cancel_job",
+      "event_type": "plugin_entry",
+      "kind": "action",
+      "auto_start": false,
+      "timeout": 15.0,
+      "description": "取消任务：显式转发 ArtCraft 侧取消（预留通道）并终止本地子进程",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "job_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "job_id"
+        ]
+      },
+      "llm_result_fields": [],
+      "quick_action": false,
+      "async": true,
+      "interval_seconds": null
+    },
+    "__llm_tool__artcraft_ops_get_job": {
+      "name": "artcraft_ops_get_job",
+      "event_type": "plugin_entry",
+      "kind": "action",
+      "auto_start": false,
+      "timeout": 15.0,
+      "description": "查询长任务状态、进度与结果句柄",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "job_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "job_id"
+        ]
+      },
+      "llm_result_fields": [],
+      "quick_action": false,
+      "async": true,
+      "interval_seconds": null
+    },
+    "__llm_tool__artcraft_ops_list_apps": {
+      "name": "artcraft_ops_list_apps",
+      "event_type": "plugin_entry",
+      "kind": "action",
+      "auto_start": false,
+      "timeout": 10.0,
+      "description": "列出本机已探测到的 ArtCraft App 与版本",
+      "input_schema": {
+        "type": "object",
+        "properties": {}
+      },
+      "llm_result_fields": [],
+      "quick_action": false,
+      "async": true,
+      "interval_seconds": null
+    },
+    "__llm_tool__artcraft_ops_run_sequence": {
+      "name": "artcraft_ops_run_sequence",
+      "event_type": "plugin_entry",
+      "kind": "action",
+      "auto_start": false,
+      "timeout": 30.0,
+      "description": "当用户要在 ArtCraft 软件里执行一串编辑/导出命令时使用；秒回 job_id，用 get_job 查结果、cancel_job 取消",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "app": {
+            "type": "string",
+            "enum": [
+              "photocraft",
+              "vectorcraft",
+              "craft_anything"
+            ]
+          },
+          "steps": {
+            "type": "array",
+            "maxItems": 256,
+            "description": "按序执行的命令；cmd 用引擎命令名（document.* 而非 doc.*）；params 依据 params_schema 填",
+            "items": {
+              "type": "object",
+              "properties": {
+                "cmd": {
+                  "type": "string"
+                },
+                "params": {
+                  "type": "object"
+                }
+              },
+              "required": [
+                "cmd"
+              ]
+            }
+          },
+          "input_file": {
+            "type": "string",
+            "description": "绝对路径；须在已授权 read root；与 new_doc 二选一"
+          },
+          "new_doc": {
+            "type": "object",
+            "description": "如 {width:640,height:400,background:'white'}"
+          },
+          "out_file": {
+            "type": "string",
+            "description": "输出文件名或绝对路径；写入 write root"
+          },
+          "inspect": {
+            "type": "boolean",
+            "description": "序列末尾自动追加 document.inspect，默认 true"
+          }
+        },
+        "required": [
+          "steps"
+        ]
+      },
+      "llm_result_fields": [],
+      "quick_action": false,
+      "async": true,
+      "interval_seconds": null
+    },
+    "__llm_tool__artcraft_ops_search_commands": {
+      "name": "artcraft_ops_search_commands",
+      "event_type": "plugin_entry",
+      "kind": "action",
+      "auto_start": false,
+      "timeout": 20.0,
+      "description": "当用户想对图片/矢量/文档执行某操作但不知道命令名时，先按关键词检索命令与人类可读参数 schema",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "自然语言或关键词，如 调亮 / sharpen / 新建图层；服务端按此过滤命令注册表"
+          },
+          "app": {
+            "type": "string",
+            "enum": [
+              "photocraft",
+              "vectorcraft",
+              "craft_anything"
+            ],
+            "description": "目标 app；缺省取运行时配置 default_app（默认 photocraft）"
+          },
+          "top_k": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 30,
+            "description": "默认 8"
+          }
+        },
+        "required": [
+          "query"
+        ]
+      },
+      "llm_result_fields": [],
+      "quick_action": false,
+      "async": true,
+      "interval_seconds": null
+    }
+  },
+  "lifecycles": [
+    "shutdown",
+    "startup"
+  ],
+  "timers": {},
+  "messages": [],
+  "custom_events": [],
+  "llm_tools": [
+    {
+      "name": "artcraft_ops_cancel_job",
+      "description": "取消任务：显式转发 ArtCraft 侧取消（预留通道）并终止本地子进程",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "job_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "job_id"
+        ]
+      },
+      "timeout_seconds": 15.0,
+      "role": null
+    },
+    {
+      "name": "artcraft_ops_get_job",
+      "description": "查询长任务状态、进度与结果句柄",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "job_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "job_id"
+        ]
+      },
+      "timeout_seconds": 15.0,
+      "role": null
+    },
+    {
+      "name": "artcraft_ops_list_apps",
+      "description": "列出本机已探测到的 ArtCraft App 与版本",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      },
+      "timeout_seconds": 10.0,
+      "role": null
+    },
+    {
+      "name": "artcraft_ops_run_sequence",
+      "description": "当用户要在 ArtCraft 软件里执行一串编辑/导出命令时使用；秒回 job_id，用 get_job 查结果、cancel_job 取消",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "app": {
+            "type": "string",
+            "enum": [
+              "photocraft",
+              "vectorcraft",
+              "craft_anything"
+            ]
+          },
+          "steps": {
+            "type": "array",
+            "maxItems": 256,
+            "description": "按序执行的命令；cmd 用引擎命令名（document.* 而非 doc.*）；params 依据 params_schema 填",
+            "items": {
+              "type": "object",
+              "properties": {
+                "cmd": {
+                  "type": "string"
+                },
+                "params": {
+                  "type": "object"
+                }
+              },
+              "required": [
+                "cmd"
+              ]
+            }
+          },
+          "input_file": {
+            "type": "string",
+            "description": "绝对路径；须在已授权 read root；与 new_doc 二选一"
+          },
+          "new_doc": {
+            "type": "object",
+            "description": "如 {width:640,height:400,background:'white'}"
+          },
+          "out_file": {
+            "type": "string",
+            "description": "输出文件名或绝对路径；写入 write root"
+          },
+          "inspect": {
+            "type": "boolean",
+            "description": "序列末尾自动追加 document.inspect，默认 true"
+          }
+        },
+        "required": [
+          "steps"
+        ]
+      },
+      "timeout_seconds": 30.0,
+      "role": null
+    },
+    {
+      "name": "artcraft_ops_search_commands",
+      "description": "当用户想对图片/矢量/文档执行某操作但不知道命令名时，先按关键词检索命令与人类可读参数 schema",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "自然语言或关键词，如 调亮 / sharpen / 新建图层；服务端按此过滤命令注册表"
+          },
+          "app": {
+            "type": "string",
+            "enum": [
+              "photocraft",
+              "vectorcraft",
+              "craft_anything"
+            ],
+            "description": "目标 app；缺省取运行时配置 default_app（默认 photocraft）"
+          },
+          "top_k": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 30,
+            "description": "默认 8"
+          }
+        },
+        "required": [
+          "query"
+        ]
+      },
+      "timeout_seconds": 20.0,
+      "role": null
+    }
+  ],
+  "declared_entries": {
+    "source": "C:\\Users\\54301\\WorkBuddy\\2026-11-07-22-33-50\\probe\\_timeout_probe\\plugin.meta.json",
+    "present": false,
+    "ids": [],
+    "missing_in_code": [],
+    "missing_in_meta": []
+  },
+  "run_dir": "C:\\Users\\54301\\AppData\\Local\\Temp\\neko-sandbox-runs\\20261108-094340-a50b17",
+  "trace": "C:\\Users\\54301\\AppData\\Local\\Temp\\neko-sandbox-runs\\20261108-094340-a50b17\\trace.jsonl"
+}

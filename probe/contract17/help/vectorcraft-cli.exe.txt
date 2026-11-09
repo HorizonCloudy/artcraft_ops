@@ -1,0 +1,68 @@
+vectorcraft-cli — VectorCraft automation
+
+USAGE:
+  vectorcraft-cli mcp [--connect ADDR | --headless] [--automation-read-root DIR]... [--automation-write-root DIR]...
+      Run the MCP server on stdio. Default: connect to a running app at 127.0.0.1:7979
+      (vectorcraft --control 7979), falling back to a headless in-process session.
+      --automation-read-root / --automation-write-root confine the files the agent's commands read
+      (open, place, relink, library loads…) and write (save, export, package, library saves…) to
+      DIR, links followed; each may be given more than once, a path inside any of its folders being
+      allowed, and a kind left out grants none of its access. They imply --headless: a running app
+      enforces its own (vectorcraft --control PORT --automation-read-root DIR …).
+
+  vectorcraft-cli run [--in FILE] [--cmd ID [--params JSON] | --commands FILE|-]... [--export FILE]... [--scale N] [--ppi N]
+      Headless batch: open FILE (any readable format) or start a new document, run commands in
+      order, export each FILE in the format its extension picks (see Writable formats; a .ait FILE
+      is a template, written as file.saveAsTemplate writes it). Raster exports use the document's
+      raster effects resolution unless --scale (pixels per point) or --ppi (pixels per inch, wins
+      over --scale) is given; other formats leave them out. Prints one JSON result per step.
+      --commands reads steps from FILE, or from standard input for -, where it stands among the
+      --cmd and --export steps: a JSON array of {"command": ID, "params": {...}} (or "id" for
+      "command"), or one such object per line (JSON Lines), at most 64 MiB and 100000 steps.
+      Errors name the step, counting from 0 as "$N" references do.
+
+  vectorcraft-cli commands
+      Print the command catalogue as JSON.
+
+  vectorcraft-cli convert IN OUT [--scale N] [--ppi N] [--artboard I | --range R] [--outline-text] [--decimals N] [--replace-lossy] [--editing-data] [--preserve-editing] [--ai-version 7|pdf] [--hidden-objects layer|omit|visible] [--transparent-images flatten|omit]
+      Open IN (any readable format) and export OUT in the format its extension picks (see Writable
+      formats). Raster resolution: --ppi, else 72 times --scale, else the document's raster effects
+      resolution; other formats leave them out. --artboard is 0-based, --range 1-based ("1-3,5"); a PDF gets every artboard
+      unless one of them is given, EPS the bounds of the art, the other formats the first artboard.
+      A .ait OUT is a template of every artboard, written as file.saveAsTemplate writes it (not with
+      --artboard or --range).
+      Live effects are kept, and hidden layers and objects (written hidden in SVG and PSD), with
+      SVG's data-* attributes; --outline-text writes SVG text as paths, --decimals sets SVG's coordinate
+      precision (1–7, default 3). OUT may not be IN when reading
+      IN left things out (hidden text, art or layers it could not read; the notes say which) unless
+      --replace-lossy is given. --editing-data opens a .ai or an EPS with editing data from its editing copy
+      even where that draws differently from its PDF part or page (which can be older), as long as
+      it can be read. A PDF OUT omits the embedded native document unless --preserve-editing is
+      given (the app's Save As PDF still defaults to keeping it). With --preserve-editing, when the
+      attachment is written the result's warnings say so (it is left out, with its own warning, for
+      --artboard or a --range without every artboard).
+      The result has the export's warnings, and importWarnings for what reading IN left out.
+      --ai-version 7 writes a .ai as the legacy version 7 (layers, groups and type kept; one file
+      per artboard, OUT-<artboard>.ai when there are several; default pdf, PDF-compatible), with
+      --hidden-objects (default layer: a hidden layer above each layer's hidden objects; omit;
+      visible), --transparent-images (default flatten, with the art under them; omit) and
+      --outline-text (type as outlines instead of text).
+
+  vectorcraft-cli info FILE
+      Print a JSON summary: the import warnings (what didn't come in as it was, such as an EPS
+      read from its preview and why), title, colour mode, units, artboards, object counts by
+      kind, fonts.
+
+  vectorcraft-cli bench FILE [--size WxH] [--iters N]
+      Render FILE (any readable format) fitted to WxH (default 2880x1800) and print ms per frame
+      (warm), multithreaded and single-threaded.
+
+  vectorcraft-cli perf [--paths N] [--deep]
+      Check the performance budgets (render, pan, hit test, save/load, SVG, Pathfinder, handle
+      and segment drags) on a synthetic N-path document (default 50000). Exits non-zero if a
+      budget is exceeded, unless the report says the machine is busy. --deep also times work with
+      no budget yet and prints memory use (the working set on Windows), with the peak so far on
+      Windows and Linux.
+
+Readable formats: .vectorcraft, .drawcraft, .svg, .svgz, .pdf, .ai, .ait, .png, .pns, .jpg, .jpeg, .gif, .webp, .tif, .tiff, .bmp, .dib, .rle, .tga, .vda, .icb, .vst, .pcx, .pxr, .jpf, .jpx, .jp2, .j2k, .j2c, .jpc, .psd, .pdd, .psb, .vctemplate, .dxf, .emf, .wmf, .eps, .epsf, .ps, .af, .afdesign, .afpub
+Writable formats: .vectorcraft, .svg, .svgz, .pdf, .ai, .png, .jpg, .gif, .webp, .tif, .bmp, .vctemplate, .txt, .dxf, .eps, .emf, .wmf, .tga, .psd
