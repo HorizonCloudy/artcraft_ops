@@ -1,0 +1,17 @@
+# 统一 LF：宿主的哈希校验按**逐字节**比对，换行符被转换会让部署校验全部失配。
+# 不要改成 core.autocrlf 依赖本地配置 —— 那份配置不进仓库，别人 clone 就会漂。
+* text=auto eol=lf
+
+*.py      text eol=lf
+*.md      text eol=lf
+*.toml    text eol=lf
+*.ini     text eol=lf
+*.json    text eol=lf
+*.txt     text eol=lf
+*.cfg     text eol=lf
+
+# 二进制：不做任何换行/编码处理
+*.png     binary
+*.jpg     binary
+*.pdf     binary
+*.zip     binary

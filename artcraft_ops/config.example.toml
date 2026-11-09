@@ -1,0 +1,127 @@
+# artcraft_ops —— 运行时配置模板（业务段，**不含**清单段）
+#
+# 宿主首次安装时把本文件逐字节复制到：
+#   %LOCALAPPDATA%\N.E.K.O\plugins\artcraft_ops\config\plugin.toml
+# 由 `await self.config.dump()` 读取（async！漏 await 会拿到协程对象）。
+#
+# 严禁在本文件出现清单段（宿主保留的 plugin 段）：重复定义会污染 pydantic 模型。
+# 业务配置一律**顶层**（`schema.py:305` `PluginConfigSchema extra="allow"`）；
+# 严禁塞进 [plugin_runtime]（那 5 个键之外的会被静默丢弃 + WARNING）。
+#
+# 差异表 / roots / limits 放这里而**不放进程 env**：宿主代理热切换会改
+# HTTP_PROXY / NO_PROXY / ALL_PROXY（`config_router/proxy.py:82-101`）。
+
+[plugin_runtime]
+timeout = 30
+
+# ---------------------------------------------------------------------------
+# 显式 CLI 覆盖（留空 = 走 locator 定位顺序：配置 → 上游默认路径族 → 本机实测 → 探针）
+# ---------------------------------------------------------------------------
+[artcraft.apps]
+default = "photocraft"
+
+[artcraft.apps.photocraft]
+cli_path = ""
+version = "0.21.0"
+input_mode = "positional"
+new_flag = "--new"
+output_flag = "--out"
+commands_subcmd = "commands"
+supports_filter = true
+commands_parser = "photocraft"
+filter_mode = "server"
+has_disabled_reason = true
+has_needs_document = true
+has_serve = true
+builder = "run_cmd"
+
+[artcraft.apps.vectorcraft]
+cli_path = ""
+version = "0.22.0"
+input_mode = "flag_in"
+input_flag = "--in"
+new_flag = "--new"
+output_flag = "--export"
+output_repeatable = true
+commands_flag = "--commands"
+supports_filter = false
+commands_parser = "photocraft"
+filter_mode = "local"
+has_disabled_reason = false
+has_needs_document = false
+has_serve = false
+control_port = 7979
+builder = "run_cmd"
+
+[artcraft.apps.craft_anything]
+cli_path = ""
+version = "0.5.0"
+input_mode = "flag_project"
+input_flag = "--project"
+new_flag = ""
+output_flag = ""
+supports_filter = false
+commands_parser = "craft_anything"
+filter_mode = "local"
+capabilities_gate = true
+output_format_flag = "--output-format json"
+has_serve = false
+builder = "tool_subcmd"
+
+# ---------------------------------------------------------------------------
+# ArtCraft Studio（本地 GUI）——**没有 CLI 二进制**，只支持「启动 + 交文件」
+#
+# 入口 `artcraft_ops_open_in_studio` 只做 Popen 拉起 + 把文件路径作为 argv 传过去，
+# **不做 UI 自动化**，回包里的 `handoff_verified` 恒为 false（Popen 成功 != 窗口已加载）。
+# exe_path 留空 = 自动探测（ProgramFiles / ProgramW6432 / LOCALAPPDATA 下的 ArtCraft\artcraft.exe）。
+# 注意：入口**不接受**调用方传 exe 路径，只能由这里配置 —— 否则等于任意代码执行。
+# ---------------------------------------------------------------------------
+[artcraft.studio]
+exe_path = ""                          # 例：'C:\Program Files\ArtCraft\artcraft.exe'
+
+# ---------------------------------------------------------------------------
+# 安全：roots fail-closed（默认只授权插件自己的 data/ 与 cache/）
+#
+# 放行用户目录需要**两个开关同时打开**，且改完必须 stop → start：
+#   allow_user_dirs = true  +  user_read_roots / user_write_roots 里列出目录
+# 只写 roots 不打开开关 = 不生效；相对路径、空串会被丢弃（写绝对路径）。
+#
+# ⚠️ 这是一条**真实**的放宽：列进来的目录，模型就能读（read）/ 写（write）。
+#    roots 是逐段纯文本前缀比对，所以 ["C:\\"] 等价于放开整块盘、
+#    ["C:\\Users\\<你>"] 等价于放开整个用户目录。只列你确实要交进去的那一层。
+# ---------------------------------------------------------------------------
+[artcraft.security]
+allow_user_dirs = false
+user_read_roots = []                   # 例：['C:\\Users\\<你>\\Pictures\\artcraft']
+user_write_roots = []                  # 不给写就别填；导出优先写回插件 data/
+deny_prefixes = ["prefs.", "plugin.", "updates."]
+require_registry_match = true
+require_confirm_on_write = false
+token_file_acl_check = true
+loopback_host = "127.0.0.1"           # 字面回环地址；localhost 会解析到 [::1]，app 只绑 127.0.0.1
+redact_fields = [
+  "token", "authorization", "control_token", "cookie", "api_key",
+  "instance_json", "control-token", "auth.params.token", "secret",
+]
+
+# ---------------------------------------------------------------------------
+# 边界参数（超限一律 fail-closed 或落盘句柄，绝不静默截断关键信息）
+# ---------------------------------------------------------------------------
+[artcraft.limits]
+max_steps = 256
+max_request_line_bytes = 1048576
+max_reply_bytes = 8388608
+max_active_tcp = 16
+preview_max_px = 2048
+preview_max_png_bytes = 5242880
+serve_idle_timeout_s = 1800
+message_plane_max_bytes = 524288
+control_call_timeout_s = 60.0
+push_min_interval_s = 2.0
+job_ttl_s = 3600
+
+[artcraft.i18n]
+default_lang = "zh"
+supported = ["zh", "en"]
+# 拍平警告**不翻译、不截断**，原样透传英文
+passthrough_warnings = ["flattened; layers, masks and blend modes are not kept"]
