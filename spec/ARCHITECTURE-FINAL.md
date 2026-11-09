@@ -2643,3 +2643,71 @@ output: {error_code, error_message}  # 模型可见的干净字段
 | `time` 只有秒级 | Windows `strftime` 不支持 `%f`，且宿主不解析该字段 |
 | `details` 未脱家目录/用户名 | 归 **S17**：要给 `redact_text()` 加规则，属全局改动，本轮刻意不做 |
 | 沙盒把 dict 判 `RAW` 并打印「the host only understands Ok/Err」 | **假红**：`sandbox/runner.py:499-505` 少一个 Mapping 分支，宿主无此限制。A/B 实测 `check` 退出码改动前后都是 1 |
+
+---
+
+### §19.16 发布 v1.0.2：S16 修复对外收口（2026-11-09，**上线动作，零新增代码**）
+
+§19.15 修完 S16 后，`v1.0.1` 的 tag 与已部署代码开始分叉。本节记录把修复推到公开渠道的过程，以及独立复核捞出的两处自检盲区。
+
+**（一）版本边界**
+
+| 项 | 值 |
+|---|---|
+| 版本 | `1.0.1` → `1.0.2` |
+| 私有仓 | `0380255`（S16 修复）、`6a44554`（版本 + README 对齐） |
+| 公开仓 | `fdfe47e`，annotated tag `v1.0.2` |
+| 旧版处理 | `v1.0.0` / `v1.0.1` 的 tag 与资产**一律不动**（不可变性） |
+
+**（二）同步范围（公开仓 6 改 + 1 新）**
+
+```
+artcraft_ops/errors.py                    S16 主改动
+artcraft_ops/README.md                    错误码段改述新出口 + 测试数 + 「已知边界」换条
+artcraft_ops/plugin.toml                  1.0.1 → 1.0.2
+artcraft_ops/tests/test_error_envelope.py 新增（28 条）
+artcraft_ops/tests/test_entries_e2e.py    \
+artcraft_ops/tests/test_errors.py          > 旧断言迁到新契约
+artcraft_ops/tests/test_studio_local.py   /
+README.md（公开仓根）                      测试数 263 → 291、包名 1.0.1 → 1.0.2
+```
+
+同步后用全仓逐字节比对确认：45 个文件一致、0 不同；仅公开仓根的 `README.md` 是它专属（私有仓无根 README），`spec/` 与 `probe/` 只在私有仓（预期）。
+
+**（三）产物与门槛**
+
+| 检查 | 结果 |
+|---|---|
+| 包 | `artcraft_ops-1.0.2.zip` / 112923 B / 20 文件 / sha256 `a8003a2c…` |
+| 连打两次 | 同哈希（可复现） |
+| 包内重跑全量 | `291 passed / 1 skipped` |
+| 包内版本 / 契约 | `version = "1.0.2"`；`errors.py` 含 `is_error`、无 `_sdk_err` |
+| `sha256sum -c` | 20 条全 PASS（第 21 条是 zip 自身哈希，单独比对一致） |
+| 平台许可证 | `license.spdx_id = "GPL-3.0"` |
+| 公网下载回验 | 112923 B，哈希与本地一致 |
+| 宿主 | `version=1.0.2` / `running` / `ready`，20 文件零差异 |
+| 宿主实机回归 | 未注册命令 `POLICY_VIOLATION` + `details.reason`；成功入口 `succeeded` |
+
+**（四）独立复核（云稳 neko-reliability，只读，全部证据从公网重取）**
+
+结论：**可发布，无 P0/P1**。上表数字被逐个复现，无一处不符。他额外加做的两项也没问题：包内 20 个文件与 `git show v1.0.2:` 逐字节相同；tag 树里无 `spec/` `probe/` `dist/` `.workbuddy/` `data/` `config/`。
+
+捞出的两处**我自检没覆盖**的点：
+
+| # | 发现 | 处置 |
+|---|---|---|
+| P2-1 | 沙盒体检 `check` 退出码 = 1，`[ERROR] import.missing_module bridge.py:69 imports 'httpx'` | **工具误报**：`bridge.py:66-74` 的 httpx 在 `try` 内、失败回落 `_NoProxyClient`，而沙盒用纯 AST 扫 import、不看 `try/except`。要改沙盒（跳过可选 import）或落白名单，否则每次发布都得人工豁免 |
+| P2-2 | **照文档 fresh clone 重建拿不到发布哈希**：实测 `41abaffd…` ≠ 发布的 `a8003a2c…` | 内容字节相同（CRC 与 `compress_size` 全同），只差 zip 条目时间戳。根因：打时间戳取的是工作区 mtime（`1794228456`），这个 epoch **仓库里没有记录**。已在 Release 正文补 `SOURCE_DATE_EPOCH=1794228456` 一行；下次改为 commit-time 打时间戳 |
+| P2-3 | `v1.0.0` 的 Release 只有 zip、无 `SHA256SUMS.txt`（v1.0.1/v1.0.2 有） | 历史不统一，非本轮引入，不动 |
+
+**（五）这条 P2-2 的教训**
+
+`build_release.py` 的「可复现」此前只在**同一工作区**验证过两次打包（同哈希），我据此写下「可复现」三个字。但真正的可复现定义是「**别人**在**干净检出**上能重建出同一字节」。这两个条件我都没测：工作区 mtime 稳定、且没换环境。云稳换了 fresh clone，哈希立刻变了。
+
+结论写进纪律：**「可复现」必须由第三方在干净检出上验证，自己连打两次只是「幂等」**。
+
+**（六）遗留**
+
+- S17（`details` 未脱家目录/用户名，要给 `redact_text()` 加规则）
+- 沙盒 `runner.py` 缺 Mapping 分支 + 可选 import 误报（两条工具侧待修）
+- `v1.0.0` 无 `SHA256SUMS.txt`（历史，不补）
