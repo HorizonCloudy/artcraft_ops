@@ -2559,7 +2559,7 @@ artcraft_ops/LICENSE        同上（逐字节一致）
 | 全量测试（工作区） | `263 passed / 1 skipped` |
 | 全量测试（解包目录内重跑） | `263 passed / 1 skipped` |
 | ruff `--select F,E9,B` | All checks passed |
-| 连续两次打包 | sha256 均 `cf0a6e46…`（11 0745 B / 20 条目） |
+| 连续两次打包 | sha256 均 `cf0a6e46…`（110745 B / 20 条目） |
 | 宿主 20 文件逐字节比对 | 不一致 0 个 |
 | 宿主加载 | `version=1.0.1` / `status=running` / `runtime_startup_state=ready`，6 入口 + 6 LLM 工具 |
 | 实机冒烟（5 步图层流水线） | `succeeded` / exit 0 / PNG 2054 B 640×400 |
