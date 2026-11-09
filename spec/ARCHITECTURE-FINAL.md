@@ -190,8 +190,8 @@ def redact(obj: Any) -> Any:
     """递归脱敏任意 dict/list/str；覆盖 4 处：错误消息、日志、@llm_tool output、push_message 文本。
        命中 REDACT_FIELDS 键 → 值替 '***'；文本中 64hex token → '***'。"""
 def redact_text(s: str) -> str: ...
-def safe_err(code: str, **kwargs) -> "Err":
-    """唯一对外 Err 构造口：Err(SdkError(f"{code}: {redact_text(t(code))}"))。
+def safe_err(code: str, **kwargs) -> dict:
+    """唯一对外错误出口：返回宿主 is_envelope 认的裸 dict（S16 起不再是 Err）。
        业务代码禁止直接 new SdkError —— 防 token 经 entry_executor.py:169-173/220-229 原样回包。"""
 
 # config.py / i18n.py
@@ -635,7 +635,7 @@ def should_push(job, now, new_pct) -> bool:
 
 ## 8. 错误码表
 
-`safe_err()` = `Err(SdkError(f"{code}: {redact_text(t(code))}"))`；[FACT] `Err.code` 被抹平为 `INTERNAL`，**关键码必须写进 message 前缀**。🔴 = **全部 CODE 的对外文案、日志、`@llm_tool` output、`push_message` 文本必须经 `redact()`，禁止出现 token / 控制文件内容 / instance.json 内容**；业务代码禁止直接 `new SdkError`。
+`safe_err()` 返回宿主 `is_envelope` 认的**错误 envelope**（`success=False` + `error.code` + `time`，见 §19.15），`error.code` 原样落 `RunError.code`，**不再**被抹平为 `INTERNAL`。🔴 = **全部 CODE 的对外文案、日志、`@llm_tool` output、`push_message` 文本必须经 `redact()`，禁止出现 token / 控制文件内容 / instance.json 内容**；业务代码禁止直接 `new SdkError`。
 
 | CODE | 用户文案 (zh) |
 |---|---|
@@ -934,7 +934,7 @@ def safe_error(code: str, exc: BaseException | None = None, **kwargs) -> "Err":
     exc 详情只允许进插件日志，且先 redact_text(str(exc))、用预格式化 logger。"""
     if exc is not None:
         logger.error("artcraft_ops %s failed: %s", code, redact_text(str(exc)))  # stdlib %s
-    return Err(SdkError(f"{code}: {redact_text(t(code, **kwargs))}"))
+    return err(code, **kwargs)      # 裸 dict envelope，见 §19.15；不要改回 Err
 
 def safe_err(code: str, **kwargs) -> "Err":        # 薄别名，保住 §10 测试断言
     return safe_error(code, None, **kwargs)
@@ -2346,7 +2346,7 @@ roots 判定        = REJECT PATH_UNSAFE     （修前 ALLOW）
 
 **顺带发现（pre-existing，不在 S10 范围，记为 S16）**
 
-宿主把入口层返回的 `ArtcraftError` 统一包装成 `error.code = "INTERNAL"` / HTTP 500，真正的码只能从 `error.message` 里 grep（如 `PATH_UNSAFE: 路径不安全，已拒绝`）。**字面 `..`、`PATH_OUTSIDE_ROOTS` 表现完全一致 ⇒ 是宿主 SDK 与插件返回值契约的共性问题，与 S10 无关**。影响：LLM 工具调用拿不到结构化 `error_code`，只能读 message。`run_sequence` 的 `except BaseException → _error_from(exc)` 返回 `errors.error_for(exc)`，该返回值未被宿主识别为业务错误。
+宿主把入口层返回的 `ArtcraftError` 统一包装成 `error.code = "INTERNAL"`（**HTTP 状态是 200**，`500` 只是 envelope 的 `code` 字段值），真正的码只能从 `error.message` 里 grep（如 `PATH_UNSAFE: 路径不安全，已拒绝`）。**字面 `..`、`PATH_OUTSIDE_ROOTS` 表现完全一致 ⇒ 是宿主 SDK 与插件返回值契约的共性问题，与 S10 无关**。影响：LLM 工具调用拿不到结构化 `error_code`，只能读 message。`run_sequence` 的 `except BaseException → _error_from(exc)` 返回 `errors.error_for(exc)`，该返回值未被宿主识别为业务错误。（2026-11-09 S16 已修：`errors.err()` 改返回宿主 `is_envelope()` 认的裸 dict，`error.code` 原样落 `RunError.code`；上句描述的是修复前的行为。）
 
 **部署残留（如实记）**
 
@@ -2574,5 +2574,72 @@ artcraft_ops/LICENSE        同上（逐字节一致）
 
 **（六）遗留**
 
-- S16（宿主把 `ArtcraftError` 压成 500 `INTERNAL`，真码只在 message）仍待裁决
+- ~~S16~~ **已修**，见 §19.15（错误出口改 envelope，`error.code` 原样落 `RunError.code`）；顺带订正：原记录的「HTTP 500」是误记，实测状态码恒 200
 - `bridge.py` / `studio_channel.py` 两个 v1 预留桩的去留仍未定（§19.13 已评估：保留）
+
+---
+
+### §19.15 S16 修复：错误码改由 envelope 承载（2026-11-09，**生产改动 1 文件**）
+
+**（一）先订正一条误记**
+
+§19.14（六）与旧 README 都写「宿主把入口失败包装成 HTTP 500 / `error.code=INTERNAL`」。**`HTTP 500` 是错的**：`POST /runs` 与 `GET /runs/{id}` **恒返回 200**，`500` 只是回包里的 `code` 字段值。真正的病根是另一件事：
+
+> 插件当年把错误码塞进 `SdkError(message)` 的**文本**里（`"<CODE>: <文案>"`），而 `SdkError.code` 从未被填充。宿主四条链路都只能取 `str()`，于是码变成不可解析的散文。
+
+**（二）四个压平点（`[FACT]`，逐行核过）**
+
+| # | 位置 | 行为 | 丢掉什么 |
+|---|---|---|---|
+| D1 | `entry_executor.py:169-173` | `Err` 且 `is_ok()` 假 → 抛 `PluginExecutionError(str(result.error))` | `SdkError.code`/`details` |
+| D2 | `entry_executor.py:220-229` | `except Exception` → `PLUGIN_EXECUTION_FAILED` | 任何异常类型与码 |
+| D3 | `communication.py:334-335` | `RpcRemoteError → PluginExecutionError(exc.message)` | `RpcRemoteError.code`（`rpc.py:150-158` 明明有） |
+| D4 | `trigger_service.py:410-420` | `except PluginError → fail(ErrorCode.INTERNAL)` | **`INTERNAL` 的产生点** |
+
+⚠️ D4 的 `PluginError` 分支在 `:433-443` 的 `ValueError/TypeError/KeyError → VALIDATION_ERROR` 特判**之前**，所以「抛对异常类型」对插件永不生效——异常路线整条堵死。
+
+**（三）唯一活路：返回 envelope**
+
+`is_envelope()`（`plugin/core/responses.py:146-173`）只查三件事：`dict` + `success ∈ {True,False}` + 有 `error` 与 `time`。命中即被 `_normalize_plugin_response`（`trigger_service.py:457-474`）原样保留，再由 `runs/manager.py:695-711` 读 `error.code` 落成 `RunError.code`（`str`，无白名单）。
+
+`errors.err()` 因此改为返回裸 dict：
+
+```
+success: False   code: 500(int)   data: None   message: ""   time: ISO8601
+error: {code, message:"<CODE>: <脱敏文案>", details: 标量≤8键|None, retriable: false}
+is_error: True                       # @llm_tool 通道靠它透传（llm_tools.py:243-262）
+output: {error_code, error_message}  # 模型可见的干净字段
+```
+
+**（四）三条反向护栏（改回去就等于撤销 S16）**
+
+1. **不要试图把外层 `reply["success"]` 改成 `False`**。`entry_executor.py:201` 是无条件置 `True`，插件控制不到；而外层一旦为假，`RpcRemoteError → PluginError → fail(INTERNAL)` 会把码**重新抹平**。「外层 True + `data` 里包 envelope」不是疏忽，是现有宿主下唯一能保码的形状。
+2. **envelope 的键必须是字面量**，`kwargs` 只许进 `details`。禁止 `err(code, **payload)` 透传，否则白名单整体失效。
+3. **成功路径继续走 `Ok`**，不许也套 envelope（`_normalize_plugin_response` 对普通 Mapping 会 `ok(data=...)`，套错就是把成功包成失败）。
+
+**（五）验证证据**
+
+| 检查 | 结果 |
+|---|---|
+| 全量测试 | `291 passed / 1 skipped`（基线 263 → 新增 28 条错误面用例） |
+| ruff `--select F,E9,B` | All checks passed |
+| 变异有牙（副本内故意破坏 3 处） | 去键名脱敏 → 仅对应 1 条红；模板插 `{token}` → 仅 i18n 护栏红；删 `time` → 3 条红 |
+| 真宿主·未注册命令 | `error.code="POLICY_VIOLATION"`，`details.reason` 齐（**修复前为 `INTERNAL`**） |
+| 真宿主·越界路径 | `error.code="PATH_OUTSIDE_ROOTS"`，`details.path` 齐 |
+| 真宿主·成功入口 | `succeeded`，无 `error` 字段 |
+| 真宿主·真实 CLI 流水线 | `succeeded`，PNG 2054 B（成功路径零回归） |
+| 宿主文件一致性 | 20 文件逐字节 0 不一致；`version=1.0.1 / running / ready` |
+
+**（六）审查捞出的真问题（已修）**
+
+`details` 的**键名脱敏从未生效**：`_details_from` 只对裸值调 `redact(value)`，而凭证键规则 `_is_secret_key` 只在 `redact({k:v})` 的 dict 分支触发。实测 `err("X", control_token="plain-token-value")` 原样回包。今日无调用点传此类 kwarg（不可达），但 `details` 是**新增的机器可读出口**，一行插值即泄露。已改为 `_MASK if _is_secret_key(key) else redact(value)`，并补 7 键负向用例 + 19 条 i18n 模板静态护栏（0 命中）。
+
+**（七）遗留与已知代价**
+
+| 项 | 状态 |
+|---|---|
+| legacy socket `TRIGGER` 回包外层 `success=True`（失败藏在 `data`） | 仓内唯一消费者 `communication.py:701` 已核安全；仓外老客户端会误读。属宿主协议层，插件侧无解 |
+| `@llm_tool` 通道的 `error` 字段是 `str(dict)` | `llm_tools.py:253` 决定的，插件侧无解；干净信息在 `output` |
+| `time` 只有秒级 | Windows `strftime` 不支持 `%f`，且宿主不解析该字段 |
+| `details` 未脱家目录/用户名 | 归 **S17**：要给 `redact_text()` 加规则，属全局改动，本轮刻意不做 |
+| 沙盒把 dict 判 `RAW` 并打印「the host only understands Ok/Err」 | **假红**：`sandbox/runner.py:499-505` 少一个 Mapping 分支，宿主无此限制。A/B 实测 `check` 退出码改动前后都是 1 |

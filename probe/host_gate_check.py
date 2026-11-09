@@ -308,10 +308,14 @@ def main() -> int:
             ok = False
             continue
         payload = res["payload"]
-        # [2026-11-08 宿主实测] 宿主会把插件抛的 PolicyViolation 统一包成
-        # `{"code":500,"error":{"code":"INTERNAL","message":"... PATH_OUTSIDE_ROOTS: ..."}}`
-        # —— 真实错误码**不在**顶层字段里，只存在于 message 文本中。所以判据必须
-        # 扫整段序列化结果，不能只看 payload["error_code"]（第一版就是这么假绿的）。
+        # [2026-11-08 宿主实测 + 2026-11-09 S16 订正] 旧代码时宿主把插件抛的
+        # PolicyViolation 包成 `{"code":500,"error":{"code":"INTERNAL","message":
+        # "... PATH_OUTSIDE_ROOTS: ..."}}`。**HTTP 状态是 200**，那个 `500` 只是
+        # envelope 的 `code` 字段值（真宿主 `plugin/core/responses.py:127-140`；
+        # `get_http_status()` 生产代码零调用）。S16 起入口改返回 envelope，
+        # `error.code` 应直接是真实码（PATH_UNSAFE / PATH_OUTSIDE_ROOTS）。
+        # 判据仍扫整段序列化结果：兼容旧码（真码只在 message 文本里）与新码两种形态，
+        # 不能只看 payload["error_code"]（第一版就是这么假绿的）。
         blob = json.dumps(payload, ensure_ascii=False)
         code = err_code(payload)
         entry_missing = "not found in plugin" in blob

@@ -25,9 +25,16 @@ def _spec(impl):
 
 
 def _err_message(e) -> str:
-    """兼容 stub SDK 与真实 SDK：Err.error 是 SdkError，str() 即 message。"""
-    err = getattr(e, "error", None)
-    return str(err) if err is not None else str(e)
+    """取错误 envelope 的 ``error.message``。
+
+    Phase 2 契约（S16 error surface）：``errors.err()`` 不再返回 SDK 的 ``Err``，
+    而是宿主可直接消费的裸 dict envelope，固定码在 ``error.code``、
+    带 ``<CODE>: `` 前缀的人读文案在 ``error.message``。
+    """
+    assert isinstance(e, dict), f"期望错误 envelope dict，实际 {e!r}"
+    error = e.get("error")
+    assert isinstance(error, dict), f"envelope.error 必须是 dict，实际 {error!r}"
+    return str(error.get("message") or "")
 
 
 # ---------------------------------------------------------------------------

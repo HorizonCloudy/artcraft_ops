@@ -93,8 +93,9 @@ user_read_roots = ['C:\Users\<你>\Pictures\artcraft']
 | `CLI_USAGE_ERROR` | CLI 退出码 2（参数拼错） |
 | `JOB_NOT_FOUND` | `job_id` 不存在或已过期（`job_ttl_s`） |
 
-> 已知边界：宿主会把入口层返回的 `ArtcraftError` 统一包装成 HTTP 500 / `error.code = "INTERNAL"`，
-> 真正的码在 `error.message` 文本里（`PATH_UNSAFE: ...`）。这是宿主 SDK 与插件返回值的契约问题，非本插件可控。
+> 错误出口：入口失败返回宿主认的错误 envelope（`success=false` + `error.code` + `time`），
+> `error.code` 原样落进 run 记录的 `RunError.code`（`PATH_UNSAFE` / `POLICY_VIOLATION` / …），
+> 不再被压成 `INTERNAL`；`error.message` 仍是 `<CODE>: <脱敏文案>`，便于人读与 grep。
 
 ---
 

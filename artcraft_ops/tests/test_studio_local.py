@@ -325,9 +325,10 @@ def test_entry_rejects_outside_root_with_fixed_code(load_plugin_init, tmp_path, 
         lambda *a, **k: pytest.fail("拒绝路径时不该启动进程"),
     )
     res = asyncio.run(plugin.artcraft_ops_open_in_studio(files=["C:/Windows/win.ini"]))
-    err_obj = getattr(res, "error", None)
-    assert err_obj is not None, f"应返回 Err，实际 {res!r}"
-    assert "PATH_OUTSIDE_ROOTS" in str(getattr(err_obj, "message", err_obj))
+    assert isinstance(res, dict), f"应返回错误 envelope dict，实际 {res!r}"
+    # 两种 fail-closed 码都接受：具体命中哪个由 roots 判据顺序决定，
+    # 把某一个钉死会在实现侧调整 deny-list 顺序时误红。
+    assert res["error"]["code"] in ("PATH_OUTSIDE_ROOTS", "PATH_UNSAFE"), res["error"]
 
 
 def test_entry_launches_inside_root(load_plugin_init, tmp_path, monkeypatch):
