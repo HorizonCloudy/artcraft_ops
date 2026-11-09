@@ -1,20 +1,36 @@
-"""artcraft_ops —— 叶子层：错误码 / CLI 错误映射 / 脱敏 / 唯一 Err 出口。
+"""artcraft_ops —— 叶子层：错误码 / CLI 错误映射 / 脱敏 / 唯一错误 envelope 出口。
 
 三条铁律（§13.0 / §13.2 / §14.1，全部 [FACT 宿主侧]）：
-  1. **业务代码禁止直接 ``SdkError(...)``**。宿主把 ``Err.code`` 抹平为 ``INTERNAL``
-     （`entry_executor.py:169-173,220-229`），关键码只能写进 message 前缀。
+  1. **业务失败一律返回错误 envelope dict（S16）**。宿主入口有四个压平点，
+     ``Err``/异常四条路都会被压成固定码：
+       1. `plugin/core/entry_executor.py:169-173` —— 入口返回 ``Err`` 时只取
+          ``str(result.error)``，``SdkError.code``/``details`` 直接丢；
+       2. 同文件 `:220-229` —— ``except Exception`` 把任何插件异常压成
+          ``{"code": "PLUGIN_EXECUTION_FAILED"}``；
+       3. `plugin/core/communication.py:334-335` —— 父进程侧再包一层，
+          丢掉 ``RpcRemoteError.code``（`rpc.py:150-158` 里明明有）；
+       4. `plugin/runs/trigger_service.py:410-420` —— ``except PluginError``
+          直接 ``fail(ErrorCode.INTERNAL, str(exc))``，**这才是 ``INTERNAL`` 的产生点**。
+          注意 :410 分支排在 :433-443 的 ``ValueError`` 等类型特判**之前**，
+          而插件异常经 RPC 后已是 ``PluginExecutionError``，所以类型特判对插件永不生效。
+     **唯一出口**：入口返回宿主 `plugin/core/responses.py::is_envelope()` 认的裸 dict
+     （只要求 ``success``/``error``/``time`` 三个键），宿主归一化时原样保留，
+     ``error.code`` 会被落成 ``RunError.code``（`runs/manager.py:695-711`，``str`` 无白名单）。
+     因此关键码**同时**写进 ``error.code`` 与 ``error.message`` 前缀，两条口径都保住。
   2. **异常对象绝不插值进对外 message**（白名单结构为主防线）；
      ``redact()`` 只是第二层兜底，且不依赖 64hex。
   3. 进 logger 的值先 ``redact_text()``，只用预格式化参数，禁 f-string / ``logger.exception``。
 
-红阶段/绿阶段均可 import：``plugin.sdk.plugin`` 在 ``err()`` 内部惰性导入，
-未装 SDK 时本模块依然可被 ``compileall`` / ``ast`` 扫描。
+本模块**不依赖**宿主 SDK：``err()`` 只产出纯 dict，未装 SDK 时依然可 import、
+可 ``compileall`` / ``ast`` 扫描。SDK 的 ``Err``/``SdkError`` 只有成功路径（``Ok``）
+与入口装饰器需要，留在 ``__init__.py``。
 """
 from __future__ import annotations
 
 import json
 import logging
 import re
+from time import gmtime, strftime
 from typing import Any
 
 from . import i18n  # noqa: F401  (保留模块引用，便于运行时切换语言表)
@@ -127,40 +143,103 @@ class ToolReplyError(Exception):
 
 
 # ---------------------------------------------------------------------------
-# 唯一对外错误出口（§13.2 P1）
+# 唯一对外错误出口（§13.2 P1 / S16）
 # ---------------------------------------------------------------------------
-def _sdk_err():
-    """惰性取 SDK 的 ``Err`` / ``SdkError``（未装 SDK 时不阻塞模块 import）。"""
-    from plugin.sdk.plugin import Err, SdkError  # noqa: PLC0415 - 惰性导入是刻意设计
+#: ``details`` 的键数上限（宿主 ``fail()`` 的 details 是自由 dict，这里自我约束，
+#: 防有人把整段 payload / CLI stdout 塞进对外回包）。
+MAX_DETAIL_KEYS = 8
 
-    return Err, SdkError
+_SCALAR_TYPES = (str, int, float, bool)
 
 
-def err(code: str, **kwargs: Any) -> Any:
-    """构造 ``Err(SdkError("<CODE>: <脱敏文案>"))``。
+def _now_iso() -> str:
+    """UTC ISO8601 时间戳（宿主 envelope 的 ``time`` 字段同形，秒级 + ``+00:00``）。
+
+    刻意不用 ``datetime.now(timezone.utc)`` / ``datetime.utcnow()``：
+    前者要 ``datetime.UTC``（Python 3.11+），后者已废弃（ruff DTZ003）；
+    在 Windows 上 ``strftime`` 不支持 ``%f``（C 层库无此扩展），故不输出微秒。
+    """
+    return strftime("%Y-%m-%dT%H:%M:%S+00:00", gmtime())
+
+
+def _details_from(kwargs: dict[str, Any]) -> dict[str, Any] | None:
+    """把模板插值字段收敛成 ``details``：**只保留标量、已脱敏、<=8 键**。
+
+    - ``None`` 值直接丢弃：它不携带任何信息，塞进 details 只会造出无意义键；
+    - 非标量（dict / list / 异常对象）一律丢弃 —— 详情只许进日志；
+    - 无标量字段时返回 ``None``（不是 ``{}``），与宿主 ``fail(details=None)`` 同形；
+    - **键名先过 ``_is_secret_key``**（``token`` / ``api_key`` / ``secret`` /
+      ``authorization`` / ``cookie`` / ``control_file`` …）：命中则整值 ``***``。
+      这一点必须在这里做：``redact(value)`` 只看得见裸值，键名规则不会触发
+      （``redact({key: value})`` 才会，但 details 是一个个键拼的）；
+    - 其余值再走 ``redact()``，字符串按值模式兜底
+      （长十六进制 / ``method:auth`` / ``--control-token-file`` / ``bearer|basic``）。
+    """
+    out: dict[str, Any] = {}
+    for key, value in kwargs.items():
+        if value is None:
+            continue
+        if not isinstance(value, _SCALAR_TYPES):
+            continue
+        key_text = str(key)
+        out[key_text] = _MASK if _is_secret_key(key_text) else redact(value)
+        if len(out) >= MAX_DETAIL_KEYS:
+            break
+    return out or None
+
+
+def err(code: str, **kwargs: Any) -> dict[str, Any]:
+    """构造宿主可直接消费的**错误 envelope**（裸 dict，不再是 SDK 的 ``Err``）。
+
+    形状（与宿主 ``plugin/core/responses.py::is_envelope`` 对齐）::
+
+        {"success": False, "code": 500, "data": None, "message": "",
+         "error": {"code": "<CODE>", "message": "<CODE>: <脱敏文案>",
+                   "details": {...} | None, "retriable": False},
+         "time": "<ISO8601>",
+         "is_error": True,                       # @llm_tool 通道靠它透传
+         "output": {"error_code": "<CODE>", "error_message": "<脱敏文案>"}}
 
     ``code`` 为**固定枚举码**（未知码也不崩，仍带前缀）；``kwargs`` 只用于模板插值，
     **不得**传异常对象。
+
+    **硬不变量（禁止绕过）**：envelope 的所有键必须是**字面量**；``kwargs``
+    **只允许**进 ``details``（经 ``_details_from`` 的白名单/脱敏/限键收敛）。
+    禁止 ``err(code, **payload)`` 这类整体透传 —— 那会让任意键值绕过白名单
+    直接出现在对外回包里；也禁止在别处 "组装" envelope 后再拼 ``kwargs``。
     """
-    Err, SdkError = _sdk_err()
-    message = f"{code}: {redact_text(t(code, **kwargs))}"
-    return Err(SdkError(message))
+    text = redact_text(t(code, **kwargs))
+    return {
+        "success": False,            # 宿主 runs/manager.py:695 据此判 failed
+        "code": 500,                 # int，与宿主 fail() 同形；自定义码默认 500
+        "data": None,
+        "message": "",               # 与宿主 fail() 同形（人读文案在 error.message）
+        "error": {
+            "code": code,            # 固定枚举码：原样进 RunError.code
+            "message": f"{code}: {text}",
+            "details": _details_from(kwargs),
+            "retriable": False,
+        },
+        "time": _now_iso(),
+        "is_error": True,            # llm_tools.py:241-263 见到它才走错误透传
+        "output": {"error_code": code, "error_message": text},
+    }
 
 
-def safe_error(code: str, exc: BaseException | None = None, **kwargs: Any) -> Any:
+def safe_error(code: str, exc: BaseException | None = None, **kwargs: Any) -> dict[str, Any]:
     """唯一对外错误出口。``exc`` 详情只进日志（先脱敏），绝不进对外 message。"""
     if exc is not None:
         logger.error("artcraft_ops %s failed: %s", code, redact_text(str(exc)))
     return err(code, **kwargs)
 
 
-def safe_err(code: str, **kwargs: Any) -> Any:
+def safe_err(code: str, **kwargs: Any) -> dict[str, Any]:
     """``safe_error`` 的薄别名（保住既有测试断言，§13.0 裁决 1）。"""
     return safe_error(code, None, **kwargs)
 
 
-def error_for(exc: BaseException) -> Any:
-    """把内部异常统一转成对外 ``Err``：只保留固定码，丢弃异常详情。"""
+def error_for(exc: BaseException) -> dict[str, Any]:
+    """把内部异常统一转成对外 envelope：只保留固定码，丢弃异常详情。"""
     if isinstance(exc, ArtcraftError):
         return err(exc.code, **_reason_fields(exc))
     if isinstance(exc, ToolReplyError):

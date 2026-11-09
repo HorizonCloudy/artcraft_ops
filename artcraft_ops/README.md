@@ -93,8 +93,9 @@ user_read_roots = ['C:\Users\<你>\Pictures\artcraft']
 | `CLI_USAGE_ERROR` | CLI 退出码 2（参数拼错） |
 | `JOB_NOT_FOUND` | `job_id` 不存在或已过期（`job_ttl_s`） |
 
-> 已知边界：宿主会把入口层返回的 `ArtcraftError` 统一包装成 HTTP 500 / `error.code = "INTERNAL"`，
-> 真正的码在 `error.message` 文本里（`PATH_UNSAFE: ...`）。这是宿主 SDK 与插件返回值的契约问题，非本插件可控。
+> 错误出口：入口失败返回宿主认的错误 envelope（`success=false` + `error.code` + `time`），
+> `error.code` 原样落进 run 记录的 `RunError.code`（`PATH_UNSAFE` / `POLICY_VIOLATION` / …），
+> 不再被压成 `INTERNAL`；`error.message` 仍是 `<CODE>: <脱敏文案>`，便于人读与 grep。
 
 ---
 
@@ -106,7 +107,7 @@ python -m pytest -q            # 全量；需要本机真实 CLI 的用例默认
 python -m pytest -q -m integration   # 仅在装了真机 CLI 时跑端到端
 ```
 
-**263 passed / 1 skipped**（Python 3.13 / 3.14，pytest 9.x 均可）。
+**291 passed / 1 skipped**（Python 3.13 / 3.14，pytest 9.x 均可）。
 
 约定：
 
@@ -125,7 +126,7 @@ python -m pytest -q -m integration   # 仅在装了真机 CLI 时跑端到端
 | `...` / `.. .` / `foo.` | 不拒。无契约依据、实测在 Win32 上不可穿越，钉住等于把实现细节冻成契约 |
 | `\u200b`(ZWSP) / `\ufeff`(BOM) | 不属 `str.isspace()`，两侧放行；实测不可穿越 |
 | `root/ con/f.txt` | 会被误判为设备名而拒绝（前导空格 + 设备名）。属 fail-closed 偏严兜底，是有意代价 |
-| 宿主 500 包装 | 见上文「错误码」末段 |
+| legacy socket `TRIGGER` 回包外层 `success` | 业务失败藏在 `data` 的 envelope 里，外层仍是 `true`。仓内唯一消费者（`communication.py:701`）会取 `data` 再解 envelope，安全；仓外老客户端若按外层 `success` 判成败会误读。插件控制不到——`entry_executor.py:201` 无条件置 `true` |
 
 ---
 
@@ -151,7 +152,7 @@ artcraft_ops/
 ├── studio_local.py        # Studio 本地 GUI 交接
 ├── bridge.py              # [预留] 回环控制通道，v1 不实现
 ├── studio_channel.py      # [预留] Studio 云端生成通道，v1 不实现
-└── tests/                 # 16 个 test_*.py + conftest.py + _fixtures.py
+└── tests/                 # 17 个 test_*.py + conftest.py + _fixtures.py
 ```
 
 ---

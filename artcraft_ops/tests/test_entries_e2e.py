@@ -144,8 +144,9 @@ def test_llm_tool_missing_params_no_typeerror(load_plugin_init, tmp_path, monkey
     assert inspect.isawaitable(coro), "入口必须是 async def"
     res = asyncio.run(coro)
 
-    assert isinstance(res, (Ok, Err)), "不得抛 TypeError，必须返回 Ok/Err"
-    assert isinstance(res, Err), "缺 steps 应业务失败返回 Err"
+    assert isinstance(res, (Ok, dict)), "不得抛 TypeError，必须返回 Ok/Err"
+    assert isinstance(res, dict), "缺 steps 应业务失败返回错误 envelope"
+    assert res["error"]["code"] == "POLICY_VIOLATION", res["error"]
     assert calls == [], "参数校验失败不得 spawn"
 
 
@@ -153,7 +154,7 @@ def test_llm_tool_missing_params_no_typeerror(load_plugin_init, tmp_path, monkey
 # 边界
 # ---------------------------------------------------------------------------
 def test_limit_steps_256(load_plugin_init, tmp_path, monkeypatch):
-    """#19 P0 边界：257 步 -> LIMIT_STEPS Err，runner.spawn 未调用。"""
+    """#19 P0 边界：257 步 -> LIMIT_STEPS 错误 envelope，runner.spawn 未调用。"""
     module = load_plugin_init()
     app, ctx, Err, Ok = _instantiate(module, tmp_path)
     fn = _get_entry(module, app, "artcraft_ops_run_sequence")
@@ -165,8 +166,9 @@ def test_limit_steps_256(load_plugin_init, tmp_path, monkeypatch):
     assert inspect.isawaitable(coro)
     res = asyncio.run(coro)
 
-    assert isinstance(res, Err), f"期望 Err(LIMIT_STEPS)，实际 {res!r}"
-    assert str(res.error).startswith("LIMIT_STEPS: ")
+    assert isinstance(res, dict), f"期望错误 envelope(LIMIT_STEPS)，实际 {res!r}"
+    assert res["error"]["code"] == "LIMIT_STEPS", res["error"]
+    assert str(res["error"]["message"]).startswith("LIMIT_STEPS: ")
     assert calls == [], "超限时不得启动子进程"
 
 
@@ -185,8 +187,9 @@ def test_command_not_in_registry(load_plugin_init, tmp_path, monkeypatch):
     assert inspect.isawaitable(coro)
     res = asyncio.run(coro)
 
-    assert isinstance(res, Err), f"期望 Err(POLICY_VIOLATION)，实际 {res!r}"
-    assert str(res.error).startswith("POLICY_VIOLATION: ")
+    assert isinstance(res, dict), f"期望错误 envelope(POLICY_VIOLATION)，实际 {res!r}"
+    assert res["error"]["code"] == "POLICY_VIOLATION", res["error"]
+    assert str(res["error"]["message"]).startswith("POLICY_VIOLATION: ")
     assert calls == [], "命令未命中注册表时不得 spawn"
 
 
@@ -302,7 +305,8 @@ def test_run_sequence_honours_configured_user_root(load_plugin_init, tmp_path, m
         roots.configure_security({})
         denied = await call()
         assert not isinstance(denied, Ok), "未授权目录不应放行"
-        assert str(denied.error).startswith("PATH_OUTSIDE_ROOTS"), denied.error
+        assert isinstance(denied, dict), f"期望错误 envelope，实际 {denied!r}"
+        assert str(denied["error"]["message"]).startswith("PATH_OUTSIDE_ROOTS"), denied["error"]
 
         roots.configure_security({
             "allow_user_dirs": True,
@@ -331,7 +335,8 @@ def test_new_doc_is_second_llm_controlled_channel(load_plugin_init, tmp_path, mo
 
     两半都在：
       * `new_doc={"profile": win.ini, "width":10, "height":10}` → **不是 Ok**，
-        且 ``str(res.error)`` 含 ``PATH_OUTSIDE_ROOTS``、且**没有 spawn**。
+        且 ``res["error"]["code"]`` 是 fail-closed 码（``PATH_OUTSIDE_ROOTS`` /
+        ``PATH_UNSAFE``）、且**没有 spawn**。
         （`width`/`height` 是数字，不触发判据 —— 触发的是那个字符串 `profile`。）
       * `new_doc={"width":10,"height":10,"background":"white"}` → 正常 ``queued``。
         这一半防「一律拒 new_doc」式过度修复：新建文档是主路径，不能红。
@@ -382,8 +387,9 @@ def test_new_doc_is_second_llm_controlled_channel(load_plugin_init, tmp_path, mo
     bad, calls_after_bad, good = asyncio.run(scenario())
 
     assert not isinstance(bad, Ok), f"越界 new_doc 不得放行，实际 {bad!r}"
-    assert "PATH_OUTSIDE_ROOTS" in str(bad.error), \
-        f"期望 PATH_OUTSIDE_ROOTS，实际 error={bad.error!r}"
+    assert isinstance(bad, dict), f"越界 new_doc 必须回错误 envelope，实际 {bad!r}"
+    assert bad["error"]["code"] in ("PATH_OUTSIDE_ROOTS", "PATH_UNSAFE"), \
+        f"越界路径必须回 fail-closed 码，实际 error={bad['error']!r}"
     assert calls_after_bad == [], \
         f"new_doc 校验失败不得启动子进程，实际 spawn {calls_after_bad!r}"
 
