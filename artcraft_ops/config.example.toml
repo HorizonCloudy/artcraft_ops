@@ -1,7 +1,7 @@
 # artcraft_ops —— 运行时配置模板（业务段，**不含**清单段）
 #
 # 宿主首次安装时把本文件逐字节复制到：
-#   C:\Users\54301\AppData\Local\N.E.K.O\plugins\artcraft_ops\config\plugin.toml
+#   %LOCALAPPDATA%\N.E.K.O\plugins\artcraft_ops\config\plugin.toml
 # 由 `await self.config.dump()` 读取（async！漏 await 会拿到协程对象）。
 #
 # 严禁在本文件出现清单段（宿主保留的 plugin 段）：重复定义会污染 pydantic 模型。
