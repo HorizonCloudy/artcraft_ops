@@ -1,0 +1,38 @@
+# ---- Python 生成物（可再生，绝不入库）----
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# ---- 构建/发布产物 ----
+dist/
+build/
+*.egg-info/
+release/
+*.zip
+
+# ---- 本地运行期状态（插件状态根本应在 %LOCALAPPDATA%，不该出现在源码树）----
+data/
+cache/
+config/plugin.toml
+probe/smoke_state/
+probe/_dbg/
+
+# ---- 编辑器/系统 ----
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- 备份/临时（本仓库无 VCS 时代留下的快照，不入库）----
+_backup_*/
+_snapshot_*/
+*.orig
+*.rej
+*.bak
