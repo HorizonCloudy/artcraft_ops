@@ -135,6 +135,7 @@ python -m pytest -q -m integration   # 仅在装了真机 CLI 时跑端到端
 artcraft_ops/
 ├── plugin.toml            # 清单（[plugin] + 6 个 entries + plugin_runtime）
 ├── config.example.toml    # 运行时配置模板（宿主复制到状态根）
+├── LICENSE                # GPLv3 全文（35149 B，随发布包分发）
 ├── __init__.py            # 应用层：入口 + LLM 工具双注册 + lifecycle
 ├── sequence.py            # 领域层：argv 构建 + 参数/路径校验
 ├── roots.py               # 安全：目录授权 + Windows 路径段判据
@@ -152,3 +153,17 @@ artcraft_ops/
 ├── studio_channel.py      # [预留] Studio 云端生成通道，v1 不实现
 └── tests/                 # 16 个 test_*.py + conftest.py + _fixtures.py
 ```
+
+---
+
+## 许可
+
+Copyright (C) 2026 neko-artcraft-ops
+
+本项目以 **GNU General Public License v3.0（仅此版本）** 发布，SPDX 标识 `GPL-3.0-only`，全文见同目录 [`LICENSE`](LICENSE)。
+
+- 允许使用、修改、再分发（含商业用途）
+- 分发修改版或衍生作品时须同样以 GPLv3 开放源码，并保留版权与许可声明
+- 不提供任何担保（GPLv3 §15–§17）
+
+`LICENSE` 会随发布包一起打进去：GPLv3 §4 要求「向其他接收者一并提供本许可证副本」，打包器已把它列入 `REQUIRED_EXTRA`，漏掉即打包脚本自检失败。

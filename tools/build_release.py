@@ -31,8 +31,9 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PLUGIN_DIR = os.path.join(ROOT, "artcraft_ops")
 DIST_DIR = os.path.join(ROOT, "dist")
 
-# 运行时必需：清单 + 配置模板 + 文档 + 全部顶层模块
-REQUIRED_EXTRA = ("plugin.toml", "config.example.toml", "README.md")
+# 运行时必需：清单 + 配置模板 + 文档 + 许可证 + 全部顶层模块
+# LICENSE 必打：GPLv3 §4 要求「向其他接收者一并提供本许可证副本」，缺了包就不合规。
+REQUIRED_EXTRA = ("plugin.toml", "config.example.toml", "README.md", "LICENSE")
 EXCLUDE_DIRS = {"tests", "__pycache__", ".pytest_cache"}
 EXCLUDE_SUFFIX = (".pyc", ".pyo")
 
