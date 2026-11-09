@@ -2466,3 +2466,56 @@ dist/SHA256SUMS.txt           包 + 每个源文件的哈希
 | 拆 `test_params_roots.py`（1732 行 / 87 KB） | 结构本身是按编号分段的，拆分纯属搬运；在无 VCS 历史时做大范围移动，diff 会失去可读性。等有 git 历史后再做 |
 | 引入 mypy / bandit | 未安装；且 `mypy` 对该项目的 `Any` 密集签名会产出大量噪声，需要单独一轮定 baseline |
 | `bridge.py` / `studio_channel.py` 去留 | 见 §19.13.3，属产品裁决 |
+
+#### §19.13.8 换行归一与公开发布（2026-11-09 14:0x，用户选定「推 GitHub 公开仓库」）
+
+**（一）先发现一个会让「逐字节一致」失效的坑**
+
+仓库里 **6 个模块是纯 CRLF**（`__init__` `app_registry` `command_catalog` `locator` `sequence` `spec`），其余 14 个是 LF，`tests/test_app_registry.py` 也是 CRLF。
+
+`.gitattributes` 声明 `eol=lf` 后，**索引里是 LF、我本机工作区是 CRLF** —— `git status` 显示干净，但别人 clone 下来得到的是 LF，与我部署到宿主的字节**不一致**。也就是说「宿主 19 个文件逐字节一致」这句话只在**我这台机器上**成立，一旦换机器全部失配。
+
+**这是本轮唯一一个"差点没发现"的问题**：它不报错、不影响测试、不影响运行，只在你真的去核对哈希时才咬人。
+
+处置：全部归一为 LF（顶层 6 个 + 测试 1 个）。Python / TOML / Markdown 均不敏感，`263 passed / 1 skipped` 不变。重打包哈希随之变化，已重部署 + 重载 + 重冒烟。
+
+**（二）敏感信息扫描（公开前的强制步骤）**
+
+| 类别 | 结果 |
+|---|---|
+| 密钥/令牌赋值 | **0 处** |
+| 内网 IP | **0 处** |
+| 64 位 hex | 14 处，**全部是源码 sha256**（在 memory 里），不是凭证 |
+| 邮箱 | 2 处，是文件名 `foo@2x.png` / `Icon@2x.png`，误报 |
+| 绝对用户路径 | 22 处，去掉 `spec/` `probe/` `.workbuddy/` 后，源码里只剩 1 处占位名 `D:/Users/Alice`（测试夹具） |
+| 宿主内部文件名 | 28 处，其中 22 处在 `spec/`；源码内 6 处是解释「为什么这么写」的注释 |
+
+`config.example.toml:4` 原本写死 `C:/Users/<本机用户名>/AppData/...`，已改为 `%LOCALAPPDATA%\...` —— **示例配置不该带任何人的用户名**。
+
+**（三）公开范围（有意收窄）**
+
+| 内容 | 公开 | 理由 |
+|---|---|---|
+| `artcraft_ops/`（源码 + 测试） | ✅ | 插件本体，43 文件中的 38 个 |
+| `tools/build_release.py` | ✅ | 可复现打包器 |
+| `spec/` | ❌ | 190 KB 内部设计日志，含宿主实现细节与逐轮决策 |
+| `probe/` | ❌ | 1.6 MB，含厂商 CLI 命令目录（pc/vc/ca）与实测证据 |
+| `.workbuddy/memory/` | ❌ | 个人工作日志 |
+
+**公开树自足性已验证**：去掉 `probe/` 与 `spec/` 后，在公开树内跑全量仍是 `263 passed / 1 skipped`（测试用 `tests/_fixtures.py` 自带数据，不读那些目录）。
+
+**（四）发布结果**
+
+```
+仓库   https://github.com/addsas222/artcraft_ops        （PUBLIC，43 文件）
+Release https://github.com/addsas222/artcraft_ops/releases/tag/v1.0.0
+资产   artcraft_ops-1.0.0.zip   98083 B
+sha256 6837333df59f734869d0339571df0cbcc5620c8de609b327486b00a3d485adbe
+```
+
+**发布资产回验**：把 Release 上的 zip **下载回来**重新算 sha256，与本地构建**完全相同**（不是只看上传成功）。
+
+**（五）两个如实说明**
+
+1. **本仓库未附开源许可证**（All rights reserved）。公开 ≠ 授权，别人不能合法使用/再分发。要真正开源需单独选许可证（MIT / Apache-2.0 等），这是产品裁决，本轮不做。
+2. 源码里少数 docstring 仍引用 `../spec/` 与 `../probe/` —— 那些是内部路径，在公开仓库里是悬空的。**没有改它们**：改了会让公开源码与「已部署、已测、已打包」的字节不一致。已在顶层 README 的「仓库范围说明」里讲清。
