@@ -2857,3 +2857,59 @@ README.md（公开仓根）                      测试数 263 → 291、包名 
 | R2-P2-5 | `ruff` 声明没写作用域（仓库根会命中 `probe/` 的 4 条历史告警） | **已修**：（四）标明「在 `artcraft_ops/` 下跑」 |
 
 残余：`C:\Users\John (Work)\x` 这类含括号用户名仍是半掩，已作为已知边界钉进测试。
+
+---
+
+### §19.18 发布 v1.0.3：S17 对外收口 + keywords 全量覆盖（2026-11-10，**含一次发布中重打**）
+
+**（一）版本边界**
+
+| 项 | 值 |
+|---|---|
+| 版本 | `1.0.2` → `1.0.3` |
+| 私有仓 | `64a0d18`（S17 特性）、`51a6372`（§19.17 + （四）计数订正）、`116bd90`（memory）、`0947bf8`（bump 1.0.3）、`4d55cd3`（keywords 补全）、`86fbca5`（§17 快照批注） |
+| 公开仓 | `2200ec5`，annotated tag `v1.0.3` |
+| 旧版处理 | `v1.0.0`～`v1.0.2` 的 tag 与资产一律不动（不可变性） |
+
+**（二）发布中重打：keywords 缺口（用户在打包后叫停）**
+
+打包与 push 完成后、`gh release create` 之前，用户指出 `plugin.toml` 的 `keywords` 只点名 3 个 app（PhotoCraft / VectorCraft / Craft Anything），与 `app_registry.py` 实际注册的 **17 个** `_spec` 不符。处置：
+
+- tag `v1.0.3` 此刻已 push 但 **Release 页面与资产未建、无人消费**——删旧 tag（曾指向 `5a67ceb`）→ keywords 补全（5 中文词 + `ArtCraft` 族名 + 全部 17 个 app 名）→ 重打新 tag 指向 `2200ec5`。对外最终状态：一个干净、内容完整的 `v1.0.3`。
+- 私有仓同步两笔：`4d55cd3`（manifest 修复）+ `86fbca5`（§17.1/§17.3 快照加日期批注——**快照保留 v1.0.0 原貌不改写**，现值以 `artcraft_ops/plugin.toml` 与本节为准）。
+- 纪律沉淀：**发布序列里 `gh release create` 之前都是可回退窗口**；tag 一旦挂上 Release / 资产即进入不可变集。
+
+**（三）同步范围（公开仓 9 改）**
+
+```
+artcraft_ops/errors.py                    S17 主改动
+artcraft_ops/__init__.py                  tool_output 文本字段二遍脱敏
+artcraft_ops/jobs.py                      push metadata 走 redact_text
+artcraft_ops/spec.py                      TOOL_OUTPUT_TEXT_FIELDS
+artcraft_ops/README.md                    313 / 家目录 ~ 口径
+artcraft_ops/plugin.toml                  1.0.2 → 1.0.3 + keywords 23 项
+artcraft_ops/tests/test_error_envelope.py 注释接线至 S17
+artcraft_ops/tests/test_redact_home.py    新增（22 条）
+README.md（公开仓根）                      测试数 291 → 313、包名 1.0.2 → 1.0.3
+```
+
+同步后全仓逐字节比对：除私有专属（`spec/` `probe/` `.workbuddy/` `dist/` `.gitignore` 与缓存目录）与公开专属（根 `README.md`）外零差异。
+
+**（四）产物与门槛**
+
+| 检查 | 结果 |
+|---|---|
+| 包 | `artcraft_ops-1.0.3.zip` / 117436 B / 20 文件 / sha256 `5e2cdcd0…7729d8` |
+| 时间戳源 | **commit time**（`2200ec5`，epoch `1794270238`）——P2-2 教训落地，不再需要 `SOURCE_DATE_EPOCH` |
+| 第三方重建 | GitHub fresh clone 本 tag → `python tools/build_release.py` → **sha256 与发布包逐字节一致**（v1.0.2 的 P2-2 正式关闭） |
+| 公网下载回验 | `gh release download` → sha256 与本地一致 |
+| 包内重跑全量 | `313 passed / 1 skipped`；包内 `version = "1.0.3"` |
+| 包内 keywords | 23 项，17 个 app 名全命中 |
+| Release | `https://github.com/addsas222/artcraft_ops/releases/tag/v1.0.3`（zip + `SHA256SUMS.txt`） |
+| 宿主 | `1.0.2` 在跑；`1.0.3` 实机装载与 A/B 未做（见（五）） |
+
+**（五）遗留**
+
+- S17 两条复核确认的 medium（评审发现，`_HOME_STOP` 缺全角开括号=过度脱敏方向、`hint`/`note`/`progress_label` 无测试锚点=补则基线 >313）→ 归 **S18**
+- 沙盒 `runner.py` Mapping 分支 + 可选 import 误报（两条工具侧待修，沿用）
+- 宿主实机装载 v1.0.3 与真机 A/B 未做（本轮在无宿主环境会话中发布；装包动作留给用户或下轮）
