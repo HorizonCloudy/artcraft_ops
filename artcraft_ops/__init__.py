@@ -187,7 +187,18 @@ def tool_output(payload: dict[str, Any]) -> dict[str, Any]:
         key: value for key, value in payload.items()
         if key in spec.TOOL_OUTPUT_ALLOWLIST
     }
-    return errors.redact(filtered)
+    out = errors.redact(filtered)
+    # S17：自由文本字段补一次去标识化；result_handle / output_files 保持原样（§19.17（三））。
+    for key in spec.TOOL_OUTPUT_TEXT_FIELDS:
+        value = out.get(key)
+        if isinstance(value, str):
+            out[key] = errors.redact_text(value)
+        elif isinstance(value, (list, tuple)):      # warnings: list[str]
+            out[key] = [
+                errors.redact_text(item) if isinstance(item, str) else item
+                for item in value
+            ]
+    return out
 
 
 def _ctx_of(plugin: Any, extra: dict[str, Any] | None) -> Any:

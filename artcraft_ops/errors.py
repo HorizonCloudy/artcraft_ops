@@ -44,8 +44,30 @@ logger = logging.getLogger("artcraft_ops")
 ERROR_CODE_ORDER: tuple[str, ...] = tuple(ERROR_CODES.keys())
 
 # ---------------------------------------------------------------------------
-# 脱敏（§14.1 D1：白名单结构为主，下列规则仅兜底第二层）
+# 脱敏（§14.1 D1 + §19.17：白名单结构为主，下列规则仅兜底第二层）
 # ---------------------------------------------------------------------------
+# S17 家目录去标识化：掩码 ``~``（可识别信息而非凭证）、只认路径形状、裸词不脱；见 §19.17（一）/（五）。
+REDACT_HOME_MASK = "~"
+#: 用户名段在**散文**里的终止符（分隔符/引号/空白/中英文标点）；贪婪匹配曾吞整句（复核 P1，§19.17（一））。
+_HOME_STOP = r"""\\/\"'`\s,;:!?()\[\]{}<>|=，；：！？、。）】」』《》「］｝"""
+_HOME_NAME = rf"[^{_HOME_STOP}]+"
+#: 含空格 / 逗号的用户名只在**后接分隔符**时匹配（否则吞散文）；token 限「名字安全字符」，
+#: ``=`` / ``[`` 会打断匹配 —— 见 §19.17（一）/ R2-P2-1、R2-P2-2。
+_HOME_TOKEN = r"[A-Za-z0-9_.\-\u4e00-\u9fa5]{1,40}"
+_HOME_NAME_SPACED = rf"{_HOME_TOKEN}(?:[,\s]+{_HOME_TOKEN}){{1,6}}"
+
+REDACT_HOME_RES: tuple[str, ...] = (
+    # Windows 现行布局：先试含空格用户名（要求后接分隔符），再退回普通用户名
+    rf"(?i)(?<![A-Za-z0-9_])[A-Za-z]:[\\/]+Users[\\/]+{_HOME_NAME_SPACED}(?=[\\/])",
+    rf"(?i)(?<![A-Za-z0-9_])[A-Za-z]:[\\/]+Users[\\/]+{_HOME_NAME}",
+    # Windows XP 旧布局
+    rf"(?i)(?<![A-Za-z0-9_])[A-Za-z]:[\\/]+Documents and Settings[\\/]+{_HOME_NAME_SPACED}(?=[\\/])",
+    rf"(?i)(?<![A-Za-z0-9_])[A-Za-z]:[\\/]+Documents and Settings[\\/]+{_HOME_NAME}",
+    # lookbehind 用 ASCII 集：``\w`` 含中日韩，「中文紧贴路径」会漏网（§19.17（一））。
+    rf"(?<![A-Za-z0-9_.:-])/home/{_HOME_NAME}",
+    rf"(?<![A-Za-z0-9_.:-])/Users/{_HOME_NAME}",
+    r"(?<![A-Za-z0-9_.:-])/root(?=/|$)",                            # root 自己就是家目录
+)
 REDACT_KEY_RE = r"(?i)(token|authorization|cookie|\.token|control[_-]?file|secret|api[_-]?key)"
 REDACT_VALUE_RES: tuple[str, ...] = (
     r"\b[0-9a-fA-F]{32,}\b",                              # 32+ 位十六进制（不止 64）
@@ -61,26 +83,41 @@ REDACT_FIELDS: tuple[str, ...] = (
     "instance_json", "control-token", "auth.params.token", "secret",
 )
 
+_REDACT_HOME_PATTERNS = tuple(re.compile(p) for p in REDACT_HOME_RES)
 _REDACT_KEY_PATTERN = re.compile(REDACT_KEY_RE)
 _REDACT_VALUE_PATTERNS = tuple(re.compile(p) for p in REDACT_VALUE_RES)
 _MASK = "***"
 _MAX_STRING_SCAN = 256 * 1024   # 超长字符串只扫前 256 KiB（避免 redact 本身 OOM）
 
 
+def _mask_credentials(text: str) -> str:
+    """只跑凭证值模式（``***``），**不碰**家目录 —— 功能性路径要用这个版本。"""
+    for pattern in _REDACT_VALUE_PATTERNS:
+        text = pattern.sub(_MASK, text)
+    return text
+
+
 def redact_text(s: str) -> str:
-    """对单段文本做兜底脱敏：逐个模式**局部替换**命中的子串为 ``***``。
+    """对单段文本做兜底脱敏：逐个模式**局部替换**命中的子串。
+
+    先家目录归一（``C:\\Users\\alice\\a.png`` → ``~\\a.png``，``REDACT_HOME_RES``），
+    后凭证掩 ``***``；规则集与顺序取舍（当前两种顺序结果相同，保留顺序只为将来扩展）
+    见 §19.17（一）。
 
     注意是局部替换（``pattern.sub``），不是整段替换 —— 未命中的文本原样保留；
     这也是「脱敏后仍可读」的前提（整段抹掉会让错误信息失去诊断价值）。
+
+    **只用于自由文本**（错误消息 / 日志 / details 的值 / 消息面文案）；
+    保持可用的文件句柄不要走这里，走 :func:`redact`（凭证版）。
     """
     if not s:
         return s
     text = s if isinstance(s, str) else str(s)
     if len(text) > _MAX_STRING_SCAN:
         text = text[:_MAX_STRING_SCAN]
-    for pattern in _REDACT_VALUE_PATTERNS:
-        text = pattern.sub(_MASK, text)
-    return text
+    for pattern in _REDACT_HOME_PATTERNS:
+        text = pattern.sub(REDACT_HOME_MASK, text)
+    return _mask_credentials(text)
 
 
 def _is_secret_key(key: str) -> bool:
@@ -88,11 +125,16 @@ def _is_secret_key(key: str) -> bool:
 
 
 def redact(obj: Any) -> Any:
-    """递归脱敏任意 dict / list / tuple / str。
+    """递归脱敏任意 dict / list / tuple / str（**只做凭证，不做去标识化**）。
 
     覆盖 §13.1 的四个出口：错误消息、日志、``@llm_tool`` output、``push_message`` 文本。
     键名命中凭证词 → 值替 ``***``（不做任何保留）；
     字符串值再走 ``REDACT_VALUE_RES`` 兜底。
+
+    **S17 边界（别在这里加家目录规则）**：本函数也服务**功能性载荷**
+    （``result_handle`` / ``output_files`` / spill 转录），句柄要被 ``os.path.isfile()``
+    消费，归一成 ``~`` 即失效（``test_result.py`` spill 回归钉住）。去标识化一律走
+    :func:`redact_text` —— 划界详见 §19.17（三）。
     """
     if isinstance(obj, dict):
         out: dict[Any, Any] = {}
@@ -107,7 +149,7 @@ def redact(obj: Any) -> Any:
     if isinstance(obj, tuple):
         return tuple(redact(v) for v in obj)
     if isinstance(obj, str):
-        return redact_text(obj)
+        return _mask_credentials(obj)
     return obj
 
 
@@ -172,8 +214,8 @@ def _details_from(kwargs: dict[str, Any]) -> dict[str, Any] | None:
       ``authorization`` / ``cookie`` / ``control_file`` …）：命中则整值 ``***``。
       这一点必须在这里做：``redact(value)`` 只看得见裸值，键名规则不会触发
       （``redact({key: value})`` 才会，但 details 是一个个键拼的）；
-    - 其余值再走 ``redact()``，字符串按值模式兜底
-      （长十六进制 / ``method:auth`` / ``--control-token-file`` / ``bearer|basic``）。
+    - 其余值：**字符串走 ``redact_text``**（S17 去标识化唯一落点；``redact()`` 刻意不碰
+      家目录，见 :func:`redact` 的 S17 边界）；非字符串标量无可脱内容，原样保留。
     """
     out: dict[str, Any] = {}
     for key, value in kwargs.items():
@@ -182,7 +224,12 @@ def _details_from(kwargs: dict[str, Any]) -> dict[str, Any] | None:
         if not isinstance(value, _SCALAR_TYPES):
             continue
         key_text = str(key)
-        out[key_text] = _MASK if _is_secret_key(key_text) else redact(value)
+        if _is_secret_key(key_text):
+            out[key_text] = _MASK
+        elif isinstance(value, str):
+            out[key_text] = redact_text(value)
+        else:
+            out[key_text] = value
         if len(out) >= MAX_DETAIL_KEYS:
             break
     return out or None
@@ -341,6 +388,7 @@ def unwrap_tool_reply(resp: Any) -> dict:
 __all__ = [
     "ERROR_CODES", "ERROR_CODE_ORDER", "t",
     "REDACT_KEY_RE", "REDACT_VALUE_RES", "REDACT_TOKEN_RE", "REDACT_FIELDS",
+    "REDACT_HOME_RES", "REDACT_HOME_MASK",
     "redact", "redact_text",
     "ArtcraftError", "PolicyViolation", "AppNotFound", "ToolReplyError",
     "err", "safe_error", "safe_err", "error_for",

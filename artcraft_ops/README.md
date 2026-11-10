@@ -95,7 +95,8 @@ user_read_roots = ['C:\Users\<你>\Pictures\artcraft']
 
 > 错误出口：入口失败返回宿主认的错误 envelope（`success=false` + `error.code` + `time`），
 > `error.code` 原样落进 run 记录的 `RunError.code`（`PATH_UNSAFE` / `POLICY_VIOLATION` / …），
-> 不再被压成 `INTERNAL`；`error.message` 仍是 `<CODE>: <脱敏文案>`，便于人读与 grep。
+> 不再被压成 `INTERNAL`；`error.message` 仍是 `<CODE>: <脱敏文案>`，便于人读与 grep
+> （凭证掩 `***`；家目录前缀归一 `~`，`details.path` 不会带出本机用户名）。
 
 ---
 
@@ -107,7 +108,7 @@ python -m pytest -q            # 全量；需要本机真实 CLI 的用例默认
 python -m pytest -q -m integration   # 仅在装了真机 CLI 时跑端到端
 ```
 
-**291 passed / 1 skipped**（Python 3.13 / 3.14，pytest 9.x 均可）。
+**313 passed / 1 skipped**（Python 3.13 / 3.14，pytest 9.x 均可）。
 
 约定：
 
@@ -145,14 +146,14 @@ artcraft_ops/
 ├── locator.py             # CLI 定位 + 版本探测 + 脱敏日志
 ├── command_catalog.py     # 命令注册表：发现 / 缓存 / 检索
 ├── result.py              # CLI 输出解析 + 用户可读消息
-├── errors.py              # 19 条固定错误码 + 递归脱敏
+├── errors.py              # 19 条固定错误码 + 递归脱敏（凭证 *** / 家目录 ~）
 ├── spec.py                # 数据结构与常量（单一事实源）
 ├── app_registry.py        # per-app 薄 adapter 表
 ├── i18n.py                # zh / en
 ├── studio_local.py        # Studio 本地 GUI 交接
 ├── bridge.py              # [预留] 回环控制通道，v1 不实现
 ├── studio_channel.py      # [预留] Studio 云端生成通道，v1 不实现
-└── tests/                 # 17 个 test_*.py + conftest.py + _fixtures.py
+└── tests/                 # 18 个 test_*.py + conftest.py + _fixtures.py
 ```
 
 ---
