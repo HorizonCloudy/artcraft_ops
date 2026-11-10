@@ -1058,6 +1058,10 @@ def redact(obj: Any) -> Any:
 
 §13.2 P6 日志铁律③改为「主防线=不插值；`redact` 仅兜底，且用上面扩展规则」，其余①/②/④/⑤不变。
 
+**§19.17 追加（2026-11-09）**：家目录前缀归一为 `~`（`REDACT_HOME_RES`），只作用于
+`redact_text()`；`redact()` 保持**凭证-only**，因为结构化载荷里的 `result_handle` 要被
+`os.path.isfile()` 消费，改写即失效。详见 §19.17（三）。
+
 ### §14.2 D2 — 新增 `unwrap_tool_reply()`（§13.3 的可执行版）
 
 ```python
@@ -2641,7 +2645,7 @@ output: {error_code, error_message}  # 模型可见的干净字段
 | legacy socket `TRIGGER` 回包外层 `success=True`（失败藏在 `data`） | 仓内唯一消费者 `communication.py:701` 已核安全；仓外老客户端会误读。属宿主协议层，插件侧无解 |
 | `@llm_tool` 通道的 `error` 字段是 `str(dict)` | `llm_tools.py:253` 决定的，插件侧无解；干净信息在 `output` |
 | `time` 只有秒级 | Windows `strftime` 不支持 `%f`，且宿主不解析该字段 |
-| `details` 未脱家目录/用户名 | 归 **S17**：要给 `redact_text()` 加规则，属全局改动，本轮刻意不做 |
+| `details` 未脱家目录/用户名 | 归 **S17**：要给 `redact_text()` 加规则，属全局改动，本轮刻意不做（**已由 §19.17 完成**） |
 | 沙盒把 dict 判 `RAW` 并打印「the host only understands Ok/Err」 | **假红**：`sandbox/runner.py:499-505` 少一个 Mapping 分支，宿主无此限制。A/B 实测 `check` 退出码改动前后都是 1 |
 
 ---
@@ -2708,6 +2712,144 @@ README.md（公开仓根）                      测试数 263 → 291、包名 
 
 **（六）遗留**
 
-- S17（`details` 未脱家目录/用户名，要给 `redact_text()` 加规则）
+- S17（`details` 未脱家目录/用户名，要给 `redact_text()` 加规则）—— **已由 §19.17 完成**
 - 沙盒 `runner.py` 缺 Mapping 分支 + 可选 import 误报（两条工具侧待修）
 - `v1.0.0` 无 `SHA256SUMS.txt`（历史，不补）
+
+---
+
+### §19.17 S17：家目录 / 用户名去标识化（2026-11-09，生产 4 文件 + 测试 2 文件 + 文档）
+
+§19.15 与 §19.16 遗留的 S17：`details` 会把 `C:\Users\<本机用户名>\...` 原样带进宿主
+`RunError`。本轮把规则加进 `redact_text()`，并在实现中修正了一处**划界错误**（见（三））、
+一轮独立复核又捞出 **1 个 P1 + 8 个 P2**（见（六））。
+
+**（一）规则**
+
+| 形状 | 例 | 归一为 |
+|---|---|---|
+| Windows 现行 | `C:\Users\alice\a.png` / `c:/users/alice/a.png` | `~\a.png` / `~/a.png` |
+| Windows XP 旧布局 | `C:\Documents and Settings\alice\a.doc` | `~\a.doc` |
+| 含空格 / 逗号 / 中文名（后接分隔符） | `C:\Users\John Doe\...`、`C:\Users\Smith, John\...`、`C:\Users\张三 李四\...` | `~\...` |
+| Linux | `/home/alice/r.pdf` | `~/r.pdf` |
+| macOS | `/Users/alice/Library/x` | `~/Library/x` |
+| root | `/root/.ssh/id_rsa` | `~/.ssh/id_rsa` |
+
+- 掩码是 `~` 而**不是** `***`：用户名属**可识别信息**、不是凭证；抹成 `***` 只会得到
+  `***\WorkBuddy\shot.png`，保密没多一分，却丢了「这是家目录下」的语义。
+- **终止符是硬约束**（复核 P1）：用户名段必须在路径分隔符 / 引号 / 空白 / 中英文标点处停住。
+  第一版用贪婪 `[^\\/"'\r\n]+`，在真实模板上把整句吃掉：
+  `命令用法错误：C:\Users\bob；整批未保存任何产物` → `命令用法错误：~`，尾巴整段消失
+  （`i18n.py` 的 `CLI_USAGE_ERROR` / `NO_COMMAND_MATCH` 都中招）。现用 `_HOME_STOP` 显式
+  列出终止符，并由 `test_terminates_at_prose_punctuation` 钉住。
+- **顺序**按「先归一、后掩码」写。当前规则下两种顺序的可观测结果相同（都掩成 `***`），
+  保留该顺序只是为了让将来扩展家目录规则时掩码不会截断仍可识别的片段 —— 不写成「契约」，
+  那是不可证伪的说法（复核意见）。
+- 只认路径形状、不认裸词：`user 54301 uploaded` 原样返回（裸词规则会误伤数字与普通单词）。
+- lookbehind 用 ASCII 集 `[A-Za-z0-9_.:-]` 而不是 `\w`：Python 的 `\w` 含中日韩字符，
+  会让「路径/home/bob/x」这类中文紧贴写法整条漏网（复核 P2-1）。
+
+**（二）落点**
+
+`redact_text()` 是唯一去标识化出口，下列自由文本链路自动受益：
+`err()` / `safe_err()` / `safe_error()` 的 `error.message`、`_details_from()` 的**字符串值**
+（S17 的原始目标就是它）、`build_error_message()`、`_summarize()`（CLI stderr 摘要）、
+日志、`push_message` 的 `parts/summary/detail`、`unwrap_tool_reply()` 的异常文案。
+
+出口侧另有两处补点（复核 P2-2 / P2-3）：
+
+- `jobs._message_payload` 的 `metadata.result_path` / `metadata.result_handle` 改走
+  `redact_text()` —— 它们是展示字段，没有 `isfile` 消费者；
+- `tool_output()` 按 `spec.TOOL_OUTPUT_TEXT_FIELDS`（`error_message` / `hint` / `note` /
+  `exe_path` / `progress_label`）补一次文本脱敏；`result_handle` / `output_files` 不动。
+
+**（三）实现中发现的划界错误（本轮真正的收获）**
+
+第一版把规则直接加进 `redact_text()` 就跑全量，`test_result.py::test_spill_summary_keeps_command_step_count`
+立刻**真红**：`result_handle` 从 `C:\Users\...\job-result.json` 变成 `~\AppData\...`，
+`os.path.isfile(handle)` 失败。
+
+根因：`redact()` 被两用 —— 既处理**展示文本**（`@llm_tool` output / `push_message`），
+也处理**功能性载荷**（`result_handle` / `output_files` / spill 转录）。S16 之前路径不在任何
+规则里，这个隐性耦合从未暴露；S17 把路径纳入规则后它立刻炸出来。
+
+定稿划界：
+
+| 出口 | 函数 | 家目录 | 凭证 |
+|---|---|---|---|
+| 自由文本（消息 / 日志 / details 值 / 消息面文案） | `redact_text()` | 归一为 `~` | `***` |
+| 结构化载荷（工具 output / spill 转录 / 句柄） | `redact()` | **不动** | `***` |
+
+`_details_from()` 因此改成对**字符串值**单独调 `redact_text()`（非字符串标量没有可脱内容）。
+代价：`@llm_tool` output 的 `result_handle` / `output_files` 仍带本机用户名 —— 这是
+**功能正确性的必要代价**，句柄要被 `os.path.isfile()` 消费，改写即失效。属已知边界，见（五）。
+
+补充（复核意见）：`result.materialize()` 在生产里**没有调用点**（只有测试与
+`probe/_spill_check.py` 用），所以这条划界的真实收益点主要是 `artcraft_ops_get_job` 的
+`result_handle` / `output_files`（`__init__.py:518-520` 原样回给宿主）。spill 用例仍是有效的
+回归哨兵，但别把它当成唯一消费者。
+
+**（四）验证证据**
+
+| 检查 | 结果 |
+|---|---|
+| 新增用例 | `tests/test_redact_home.py` 22 条：6 种家目录形状 / 终止性 1 / 中文紧贴 1 / 空格·逗号·中文名 2（含 M6 钉住的负向控制 `does_not_eat_prose`）/ 不误吞 3 / 半掩边界 1 / details+message 2 / 划界 1 / 幂等 1 / 凭证共存 1 / 裸词边界 1 / 出口级 2 |
+| 全量 | `313 passed / 1 skipped`（基线 291，+22） |
+| ruff `--select F,E9,B` | All checks passed（**在 `artcraft_ops/` 下**跑；仓库根会命中 `probe/` 的 4 条历史 F401/F841，非本轮引入） |
+| 变异 M1 删家目录循环 | 17 红（全部正向 + 出口级） |
+| 变异 M2 掩码 `~` → `***` | 17 红（等值断言全部有牙） |
+| 变异 M3 去掉 `/root` 的 `(?=/|$)` | 2 红：`test_root_word_not_swallowed`、`...does_not_eat_prose` |
+| 变异 M4 `redact()` 改走 `redact_text` | 3 红：划界 + `tool_output` 文本字段 + spill 回归（证明划界有牙） |
+| 变异 M5 `_details_from` 改回 `redact()` | 2 红：`details` 与 `message` 去标识化用例 |
+| 变异 M6 含空格分支去掉 `(?=[\\/])` | 2 红：终止性 + 不误吞（证明终止性有牙） |
+| 变异 M7 删 `warnings` 文本字段 | 1 红：`test_tool_output_text_fields_redacted` |
+| 变异 M8 jobs metadata 改回裸 `str()` | 1 红：`test_push_message_metadata_redacted` |
+| 实测 | `err("PATH_OUTSIDE_ROOTS", path=r"C:\Users\54301\WorkBuddy\shot.png")` → `details.path="~\WorkBuddy\shot.png"`，`message` 同形 |
+
+变异脚本：`probe/mut_s17_home.py`（在临时副本上改，不碰工作树；基线 23 passed / 0 failed）。
+
+**（五）已知边界（不修，如实记录）**
+
+| 边界 | 说明 |
+|---|---|
+| 裸用户名不脱 | `user 54301 uploaded` 原样。裸词规则会误伤数字与普通单词（如 `54301-archive`），收益远小于代价 |
+| 非标准家目录布局不脱 | 只认 `Users` / `Documents and Settings` / `/home` / `/Users` / `/root` 五种形状；`D:\profiles\bob` 这类自定义布局漏网。**刻意不读 env**：`redact_text` 必须是输入的纯函数，否则同一段文本在不同机器上结果不同，测试与复现都不成立 |
+| UNC 共享路径不脱 | `\\server\share\x` 不含用户名，原样保留 |
+| 功能性句柄不脱 | `result_handle` / `output_files` 带本机用户名（见（三）），因为它要被 `os.path.isfile()` 消费 |
+| 空格用户名 + 无分隔符 | `C:\Users\John Doe`（后面没有 `\`）只掩到 `~ Doe`：与 `C:\Users\bob is outside` 字面不可分，含空格分支因此要求后接分隔符。属**半掩**，不是全掩 |
+| 用户名含终止符 | `C:\Users\John (Work)\x` → `~ (Work)\x`：括号/分号既可能是用户名也可能是散文，选「不吞散文」，接受半掩（已由 `test_username_with_paren_stays_partial` 钉住） |
+| 重复分隔符 | `//home//bob//x` 不匹配（`/home/` 后面紧跟 `/`）。实际报错里没出现过这种写法，不为它加规则 |
+| 消息面句柄 | `push_message` 的 `parts.text` 与 `metadata` 都归一成 `~`；消息面**不提供可用句柄**，要取原始路径走 `get_job` 的 `result_handle`。宿主是否消费 `metadata` 未验证（仓内无消费方） |
+| 已落盘的旧 job 记录 | `jobs.py:552` 从持久化记录读回的 `error_message` 可能是旧版本写的原文，再往前只经 `redact()`（凭证版）。仅影响历史记录 |
+
+**（六）独立复核（只读代理，四段式；1 个 P1 + 8 个 P2）**
+
+结论：**有条件可** —— 核心目标成立，但 P1 必须先修。全部 P1/P2 已在本次落地前修完或认领：
+
+| # | 发现 | 处置 |
+|---|---|---|
+| P1-1 | 用户名段贪婪，路径后无分隔符时吃掉整句（真实模板 `CLI_USAGE_ERROR` / `NO_COMMAND_MATCH` 复现） | **已修**：显式 `_HOME_STOP` 终止符集 + 新增终止性用例 |
+| P2-1 | `\b` / `\w` 含中日韩字符，「中文紧贴路径」整条漏网 | **已修**：换 ASCII lookbehind + 用例 |
+| P2-2 | `push_message.metadata` 的 `result_path/result_handle` 仍带家目录 | **已修**：改走 `redact_text` + 用例 |
+| P2-3 | `exe_path` 经 `tool_output` 仍带家目录 | **已修**：`TOOL_OUTPUT_TEXT_FIELDS` + 用例 |
+| P2-4 | 完成文案里的句柄被掩，用户无法直接复制 | **认领**（见（五）） |
+| P2-5 | §19.17 规则表示例的正/反斜杠写错 | **已修**（本文档） |
+| P2-6 | 用例分类数字不对（15 = 9+4+1+1，不是 10+3+1+1） | **已修**（改为 21 条的逐类明细） |
+| P2-7 | §19.17（五）漏三条边界 | **已修**（补 3 行） |
+| P2-8 | `probe/mut_s17_home.py` 未跟踪、临时副本不清理 | **已处理**：脚本结尾清理临时副本；`probe/` 属私有仓惯例（同 `mut_params_roots.py`），不进发布包（`build_release.py` 只打 `artcraft_ops/`） |
+
+复核同时确认：M1/M3/M4/M5 四组变异结果与本节声明一致（M2/M6 由本侧补跑）；
+200KB 分隔符洪泛 218 ms、无灾难性回溯；15 条旧用例全部依赖「用户名后还有一级目录」，
+这就是 P1 能从测试中间穿过去的原因 —— 已用终止性用例补上这个盲区。
+
+**第二轮复核（修完 P1 后回看）**：P1 确认修好，无新增 P0/P1；又捞出 5 条 P2，处置如下：
+
+| # | 发现 | 处置 |
+|---|---|---|
+| R2-P2-1 | 空格用户名超过 3 段（`John Ronald Reuel Tolkien`）时半掩 | **已修**：`_HOME_NAME_SPACED` 改为「名字安全 token + `{1,6}`」，最多 7 段 |
+| R2-P2-2 | `C:\Users\Smith, John\...`（「姓, 名」型 profile）半掩 | **已修**：逗号也作分隔符（token 限定名字安全字符，`=` `[` 仍会打断，不重蹈 P1） |
+| R2-P2-3 | `warnings`（`list[str]`）是自由文本但未覆盖 | **已修**：加入 `TOOL_OUTPUT_TEXT_FIELDS`，循环同时处理列表 |
+| R2-P2-4 | `metadata` 的宿主侧消费未验证 | **认领**：见（五）「消息面句柄」，原始句柄走 `get_job` |
+| R2-P2-5 | `ruff` 声明没写作用域（仓库根会命中 `probe/` 的 4 条历史告警） | **已修**：（四）标明「在 `artcraft_ops/` 下跑」 |
+
+残余：`C:\Users\John (Work)\x` 这类含括号用户名仍是半掩，已作为已知边界钉进测试。
