@@ -161,8 +161,9 @@ def _message_payload(
             "phase": status_value(job),
             "progress": round(float(job.progress or 0.0), 3),
             "pct": pct,
-            "result_path": str(getattr(job, "result_path", "") or ""),
-            "result_handle": str(getattr(job, "result_handle", "") or ""),
+            # 展示型 metadata：没有 isfile 消费者，一律走去标识化（S17）
+            "result_path": redact_text(str(getattr(job, "result_path", "") or "")),
+            "result_handle": redact_text(str(getattr(job, "result_handle", "") or "")),
         },
         "summary": redact_text(text)[:200],
         "detail": redact_text(text)[:500],

@@ -36,8 +36,8 @@
   2. 宿主判定器等价（内联**冻结副本** + 负向控制，证明副本可被证伪）
   3. 入口层真实调用（257 步 / 未注册命令 / 越界路径），且都断言「未 spawn 子进程」
   4. 成功路径不回归（成功 payload 不得含 ``success`` 键）
-  5. details 脱敏（仅标量、<=8 键、无字段为 None、hex token 被抹；家目录/用户名脱敏
-     已按 team-lead 裁决移出本轮，归 S17）
+  5. details 脱敏（仅标量、<=8 键、无字段为 None、hex token 被抹；家目录/用户名
+     在 S16 时按 team-lead 裁决移出，已由 **S17** 在 `tests/test_redact_home.py` 钉死）
   6. ``error_for()`` 三分支
 """
 from __future__ import annotations
@@ -311,9 +311,9 @@ def test_details_only_scalars_and_at_most_8_keys(impl):
     assert not bad, f"details 只允许标量，出现非标量：{bad}"
 
 
-# 家目录/用户名脱敏：redact_text 无此规则，S17 独立处理，本轮不钉
-# （不改写成 xfail：那会让人以为「测过了」。本条已按 team-lead 裁决移出 S16 范围，
-#   details 的脱敏口径只钉 redact_text 现有能力 —— 见下一条 hex token 用例。）
+# 家目录/用户名脱敏：S17 已落地，本文件不重复钉 —— 放在 `tests/test_redact_home.py`
+# （22 条：6 种家目录形状 + 终止性/中文紧贴/空格·逗号·中文名 + 半掩边界 + details/message
+#  端到端 + 划界 + 幂等 + 出口级）。这里只钉 redact_text 的**凭证**侧能力（下一条 hex token 用例）。
 
 
 # 云严 P2#6 + 已落地的 P1：键名命中凭证词时，值必须整值 ``***``（不是靠值模式兜底）。

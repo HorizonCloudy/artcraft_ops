@@ -293,6 +293,14 @@ TOOL_OUTPUT_ALLOWLIST: frozenset[str] = frozenset({
     "exe_path", "note",
 })
 
+# §19.17：工具出口里的**自由文本**字段 —— 只用于人读/模型读，没有 isfile 消费者，
+# 因此必须走 `redact_text()`（家目录归一）；`result_handle` / `output_files` 是
+# **功能性标识**，保持原样（句柄会被宿主的 isfile/下载路径直接消费）。
+TOOL_OUTPUT_TEXT_FIELDS: frozenset[str] = frozenset({
+    "error_message", "hint", "note", "exe_path", "progress_label",
+    "warnings",                                    # list[str]：CLI stderr 挑出的警告行
+})
+
 # 静态命名空间白名单（fail-closed 兜底）：entry handler 内**禁止**为了做注册表
 # 校验而 spawn 子进程（入口必须秒回、测试断言 create_subprocess_exec 零调用），
 # 所以入口层只做「形状 + 命名空间白名单」校验；真正的全量注册表校验放到后台 job，

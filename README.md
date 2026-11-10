@@ -53,7 +53,7 @@ search_commands  →  run_sequence  →  get_job（轮询）→  图片
 
 ```bash
 cd artcraft_ops
-python -m pytest -q                    # 291 passed, 1 skipped
+python -m pytest -q                    # 313 passed, 1 skipped
 python -m pytest -q -m integration     # 真机 CLI 端到端（默认 skip）
 ```
 
@@ -84,6 +84,6 @@ Copyright (C) 2026 neko-artcraft-ops
 - 不提供任何担保（GPLv3 §15–§17）；因使用本程序导致的软件故障、数据损坏或产出物权属争议，作者不承担责任
 - 需要别的条款（GPLv2 / Apache-2.0 / 商业授权）请先联系作者
 
-发布包 `artcraft_ops-1.0.2.zip` 内附同一份 `LICENSE`——GPLv3 §4 要求向接收者一并提供许可证副本，所以打包器把它列为必需项，缺了自检直接失败。
+发布包 `artcraft_ops-1.0.3.zip` 内附同一份 `LICENSE`——GPLv3 §4 要求向接收者一并提供许可证副本，所以打包器把它列为必需项，缺了自检直接失败。
 
 各源文件不带逐文件的版权头，是有意选择：内部规格文档里有 85 处 `文件:行号` 引用，统一插两行注释会让这些引用集体偏移。版权声明以本文件与 `LICENSE` 为准。
