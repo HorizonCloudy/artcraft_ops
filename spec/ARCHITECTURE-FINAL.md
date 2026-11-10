@@ -1313,6 +1313,10 @@ name = "检索命令"
 
 ### §17.3 修正后完整 `plugin.toml`（真 SDK 验证：pydantic OK / CLI **0 error** / 1 已知 warning）
 
+> **§19.18 追加（2026-11-10）**：本节及 §17.1 的清单快照保留 v1.0.0 时代原貌，不改写。
+> `keywords` 自 v1.0.3 起扩为「5 个中文功能词 + `ArtCraft` 族名 + 全部 17 个 app 名」
+> （与 `app_registry.py` 的 17 个 `_spec` 一一对应），现值以 `artcraft_ops/plugin.toml` 与 §19.18 为准。
+
 ```toml
 [plugin]
 id = "artcraft_ops"                        # 必须 == 目录名
