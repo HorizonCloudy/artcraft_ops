@@ -190,12 +190,67 @@ def test_readonly_sequence_classification_allows_retry_gate(impl):
 # ---------------------------------------------------------------------------
 # 错误输入
 # ---------------------------------------------------------------------------
+def test_cancel_terminal_job_keeps_status(impl):
+    """错误/边界：已成功的任务再取消 -> 状态不变，不覆盖结果。"""
+    jobs = impl("jobs")
+    j = jobs.create_job("photocraft", ["cli", "run"], False)
+    jobs._finish(j, jobs.JobStatus.SUCCEEDED, 0)
+    got = asyncio.run(jobs.cancel_job(j.job_id))
+    assert got.status == "succeeded"
+    assert j.error_code == ""
+
+
 def test_cancel_before_spawn_goes_cancelled(impl):
     """#11 错误/边界：spawn 前到达的 cancel -> QUEUED→CANCELLED 终态。"""
     jobs = impl("jobs")
     j = jobs.create_job("photocraft", ["cli", "run"], False)
     got = asyncio.run(jobs.cancel_job(j.job_id))
     assert got.status == "cancelled"
+
+
+def test_cancel_during_run_stays_cancelled(impl, monkeypatch):
+    """运行中取消：被杀 CLI 的退出码不得把 CANCELLED 覆盖成 CLI_TASK_FAILED。"""
+    jobs = impl("jobs")
+
+    class BlockingProc:
+        def __init__(self) -> None:
+            self.pid = 424243
+            self.returncode = None
+            self.stdout = asyncio.StreamReader()
+            self.stderr = asyncio.StreamReader()
+
+        def terminate(self) -> None:
+            self.returncode = -15
+            self.stdout.feed_eof()
+            self.stderr.feed_eof()
+
+        def kill(self) -> None:
+            self.terminate()
+
+        async def wait(self) -> int:
+            return int(self.returncode or 0)
+
+    async def fake_exec(*args, **kwargs):
+        return BlockingProc()
+
+    monkeypatch.setattr(asyncio, "create_subprocess_exec", fake_exec, raising=False)
+    job = jobs.create_job("photocraft", ["cli", "run"], is_edit_sequence=True)
+    job.step_total = 40
+
+    async def scenario():
+        task = asyncio.create_task(jobs.execute(job))
+        for _ in range(100):
+            await asyncio.sleep(0)
+            if jobs._PROC_HANDLES.get(job.job_id):
+                break
+        assert jobs.status_value(job) == "running"
+        await jobs.cancel_job(job.job_id)
+        return await task
+
+    result = asyncio.run(scenario())
+    assert jobs.status_value(job) == "cancelled"
+    assert job.error_code == "JOB_CANCELLED"
+    assert result.error_code == "JOB_CANCELLED"
 
 
 def test_get_job_unknown_returns_none(impl):

@@ -209,6 +209,8 @@ def test_username_with_paren_stays_partial(impl):
     errors = impl("errors")
 
     assert errors.redact_text(r"C:\Users\John (Work)\x") == r"~ (Work)\x"
+    # 全角括号同理：右括号在终止符集里、左括号曾漏掉，导致多吃掉 ``（Work``。
+    assert errors.redact_text(r"C:\Users\John（Work）\x") == r"~（Work）\x"
 
 
 # ---------------------------------------------------------------------------
@@ -325,6 +327,9 @@ def test_tool_output_text_fields_redacted(load_plugin_init):
     out = module.tool_output({
         "exe_path": HOME_WIN,
         "error_message": f"越界：{HOME_WIN}",
+        "hint": f"可在 {HOME_WIN} 查看",
+        "note": f"输出目录：{HOME_WIN}",
+        "progress_label": f"写入 {HOME_WIN}",
         "warnings": [f"flattened: wrote {HOME_WIN}"],
         "result_handle": HOME_WIN,
         "output_files": [HOME_WIN],
@@ -332,6 +337,9 @@ def test_tool_output_text_fields_redacted(load_plugin_init):
     })
 
     assert out["exe_path"] == r"~\WorkBuddy\shot.png", f"实际 {out['exe_path']!r}"
+    assert out["hint"] == r"可在 ~\WorkBuddy\shot.png 查看", f"实际 {out['hint']!r}"
+    assert out["note"] == r"输出目录：~\WorkBuddy\shot.png", f"实际 {out['note']!r}"
+    assert out["progress_label"] == r"写入 ~\WorkBuddy\shot.png", f"实际 {out['progress_label']!r}"
     assert out["error_message"] == r"越界：~\WorkBuddy\shot.png", f"实际 {out['error_message']!r}"
     assert out["warnings"] == [r"flattened: wrote ~\WorkBuddy\shot.png"], \
         f"warnings 是自由文本，必须归一：{out['warnings']!r}"

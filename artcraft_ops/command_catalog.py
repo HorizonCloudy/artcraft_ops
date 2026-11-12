@@ -24,6 +24,25 @@ from .spec import CONTROL_CALL_TIMEOUT_S, CommandSpec
 _DISCOVERY_LOCKS: dict[str, asyncio.Lock] = {}
 _CACHE_DIR: str = os.path.join(tempfile.gettempdir(), "artcraft_ops_cache")
 _TOKEN_RE = re.compile(r"[a-zA-Z0-9_.]+|[\u4e00-\u9fff]+")
+_CAMEL_RE = re.compile(r"(?<=[a-z0-9])(?=[A-Z])")
+# 中文操作词 → 英文检索词（命令表只有英文）；只收常用词，缺了再加
+_ZH_WORDS = {
+    "调亮": "brightness contrast exposure levels",
+    "提亮": "brightness contrast exposure levels",
+    "亮度": "brightness",
+    "对比度": "contrast",
+    "曝光": "exposure",
+    "色阶": "levels",
+    "曲线": "curves",
+    "饱和度": "saturation",
+    "导出": "export",
+    "锐化": "sharpen",
+    "模糊": "blur",
+    "裁剪": "crop",
+    "旋转": "rotate",
+    "图像大小": "image size",
+    "撤销": "undo",
+}
 
 
 def configure(cache_dir: str) -> None:
@@ -37,9 +56,14 @@ def current_cache_dir() -> str:
     return _CACHE_DIR
 
 
-def cache_key(app_id: str, version_token: str, commands_hash: str = "") -> str:
-    """``sha256(app | version | commands_hash)[:20]`` —— 决定性、跨版本/跨 app 必不同。"""
-    payload = f"{app_id or ''}|{version_token or ''}|{commands_hash or ''}"
+def cache_key(
+    app_id: str, version_token: str, commands_hash: str = "", parser: str = "",
+) -> str:
+    """``sha256(app | version | commands_hash | parser)[:20]`` —— 决定性、跨版本/跨 app 必不同。
+
+    ``parser`` 隔离解析器换代：旧解析器落盘的同版本缓存不可复用（PdfCraft 99→195）。
+    """
+    payload = f"{app_id or ''}|{version_token or ''}|{commands_hash or ''}|{parser or ''}"
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:20]
 
 
@@ -101,6 +125,30 @@ def _parse_craft_anything(items: list[dict], spec: Any) -> list[CommandSpec]:
     return out
 
 
+def _parse_pdfcraft(items: list[dict], spec: Any) -> list[CommandSpec]:
+    """``tools --json``：``name`` 是 ``--script`` 唯一认的 tool 名，``command`` 只是别名。"""
+    out: list[CommandSpec] = []
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        tool = str(item.get("name") or "").strip()
+        if not tool:
+            continue
+        schema = item.get("input_schema")
+        out.append(CommandSpec(
+            id=tool,
+            label=str(item.get("description") or tool),
+            params_schema=(
+                json.dumps(schema, ensure_ascii=False, separators=(",", ":"))
+                if isinstance(schema, dict) else ""
+            ),
+            enabled=True,
+            readonly=bool(item.get("read_only", _readonly(tool, spec))),
+            alias=str(item.get("command") or ""),
+        ))
+    return out
+
+
 def _as_items(payload: Any) -> list[dict]:
     """把 ``[...]`` / ``{"commands": [...]}`` / ``{"result": ...}`` 信封统一拍平成 list。"""
     if isinstance(payload, list):
@@ -147,6 +195,8 @@ def parse_commands_json(raw: str, spec: Any = None) -> tuple[CommandSpec, ...]:
     parser = getattr(spec, "commands_parser", "photocraft") if spec is not None else "photocraft"
     if parser == "craft_anything":
         return tuple(_parse_craft_anything(items, spec))
+    if parser == "pdfcraft":
+        return tuple(_parse_pdfcraft(items, spec))
     return tuple(_parse_photocraft(items, spec))
 
 
@@ -343,7 +393,8 @@ async def discover(
     这样版本内命令表变化也能命中第二份缓存）。
     """
     version = str(getattr(spec, "version", "") or "")
-    key = cache_key(app_id, version)
+    parser = str(getattr(spec, "commands_parser", "") or "")
+    key = cache_key(app_id, version, parser=parser)
     cache_dir = _CACHE_DIR
 
     if not refresh:
@@ -363,36 +414,49 @@ async def discover(
                 "".join(sorted(it.id for it in items)).encode("utf-8"),
             ).hexdigest()[:16]
             save_cache(key, items, cache_dir)
-            save_cache(cache_key(app_id, version, digest), items, cache_dir)
+            save_cache(
+                cache_key(app_id, version, digest, parser=parser), items, cache_dir,
+            )
         return items
 
 
 # ---------------------------------------------------------------------------
 # 检索（993 条命令绝不逐条暴露给模型）
 # ---------------------------------------------------------------------------
-def _haystack(item: CommandSpec) -> str:
-    return " ".join((
-        item.id, item.label, item.alias, item.params_schema, " ".join(item.menu),
-    )).lower()
+def _fields(item: CommandSpec) -> tuple[str, ...]:
+    """只查名称类字段：params_schema 里的 this/nothing 这类短词是假命中源。"""
+    parts = (item.id, item.label, item.alias, " ".join(item.menu))
+    return tuple(_CAMEL_RE.sub(" ", p).lower() for p in parts)
+
+
+def _hit(text: str, term: str) -> bool:
+    """英文按词边界（brightness 不命中参数说明里的短词），中文按子串。"""
+    if term.isascii():
+        return re.search(
+            rf"(?<![a-z0-9_]){re.escape(term)}(?![a-z0-9_])", text,
+        ) is not None
+    return term in text
 
 
 def score_item(item: CommandSpec, query: str, tokens: list[str]) -> int:
-    hay = _haystack(item)
+    fields = _fields(item)
     score = 0
-    if query and query in hay:
-        score += 5
+    if query and any(_hit(field, query) for field in fields):
+        score += 4
     for token in tokens:
-        if token and token in hay:
-            score += 1
-    if query and item.id.lower().startswith(query):
-        score += 3
+        for weight, field in zip((4, 3, 2, 2), fields):
+            if token and _hit(field, token):
+                score += weight
+                break
+    if query and fields[0].startswith(query):
+        score += 4
     return score
 
 
 async def search(
     query: str, app_id: str, top_k: int = 8,
 ) -> tuple[CommandSpec, ...]:
-    """按关键词检索命令（本地子串打分；不 spawn —— 发现走缓存/lazy）。"""
+    """按关键词检索命令（本地打分；不 spawn —— 发现走缓存/lazy）。"""
     from . import app_registry  # 局部导入：避免 app_registry ↔ catalog 顶层循环
 
     spec = app_registry.get_spec(app_id)
@@ -401,9 +465,20 @@ async def search(
     if not text:
         return ()
     tokens = [tok.lower() for tok in _TOKEN_RE.findall(text)]
+    terms = list(tokens)
+    for zh, en in _ZH_WORDS.items():
+        if zh in text:
+            terms.extend(en.split())
+    expanded = terms != tokens
+    need = 1 if expanded or len(tokens) < 2 else 2
     scored: list[tuple[int, str, CommandSpec]] = []
     for item in items:
-        value = score_item(item, text, tokens)
+        if not expanded and need > 1:
+            fields = _fields(item)
+            hits = sum(1 for token in tokens if any(_hit(f, token) for f in fields))
+            if hits < need:
+                continue
+        value = score_item(item, text, terms)
         if value > 0:
             scored.append((value, item.id, item))
     scored.sort(key=lambda row: (-row[0], row[1]))

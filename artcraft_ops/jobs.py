@@ -269,6 +269,16 @@ def _finish(job: JobState, status: JobStatus, exit_code: int | None = None) -> N
         job.progress = 1.0
 
 
+def _cancel_final(job: JobState) -> "ExecResult":
+    job.error_code = "JOB_CANCELLED"
+    job.error_message = errors.build_error_message("JOB_CANCELLED")
+    _finish(job, JobStatus.CANCELLED, -1)
+    return ExecResult(
+        ok=False, app_id=job.app_id, job_id=job.job_id,
+        error_code=job.error_code, error_message=job.error_message,
+    )
+
+
 def _crash(job: JobState, exc: BaseException) -> None:
     job.status = JobStatus.CRASHED
     job.error_code = "JOB_CRASHED"
@@ -291,12 +301,9 @@ async def execute(
         await push_progress(job, ctx)
 
     if job.cancel_requested:
-        _finish(job, JobStatus.CANCELLED)
-        await report_completion(job, None, ctx)
-        return ExecResult(
-            ok=False, app_id=job.app_id, job_id=job.job_id,
-            error_code="JOB_CANCELLED", error_message=errors.build_error_message("JOB_CANCELLED"),
-        )
+        final = _cancel_final(job)
+        await report_completion(job, final, ctx)
+        return final
 
     env = locator.build_cli_env()
     cwd = _cwd_for(job, spec)
@@ -310,6 +317,9 @@ async def execute(
         job.progress = min(0.99, job.step_done / total_steps)
 
     while True:
+        if job.cancel_requested:
+            final = _cancel_final(job)
+            break
         attempt += 1
         job.attempts = attempt
         try:
@@ -334,6 +344,8 @@ async def execute(
         job.pid = int(getattr(handle.proc, "pid", 0) or 0)
         # 单事件循环内 dict 赋值是原子的；不引入跨 loop 的 Lock 语义风险
         _PROC_HANDLES[job.job_id] = handle
+        if job.cancel_requested:
+            await runner.terminate(handle)
         try:
             raw = await asyncio.wait_for(
                 runner.stream_lines(handle, _on_line), timeout=JOB_MAX_RUNTIME_S,
@@ -368,6 +380,10 @@ async def execute(
         finally:
             _PROC_HANDLES.pop(job.job_id, None)
 
+        if job.cancel_requested:
+            final = _cancel_final(job)
+            break
+
         final = result_mod.parse_exec_output(raw, spec, job)
         job.exit_code = raw.returncode
         job.stdout_lines = len(raw.stdout_lines)
@@ -401,6 +417,9 @@ async def cancel_job(job_id: str, ctx: Any = None) -> JobState:
     job = _JOBS.get(str(job_id or ""))
     if job is None:
         raise ArtcraftError("JOB_NOT_FOUND")
+
+    if status_value(job) in TERMINAL_STATUSES:
+        return job          # 终态任务幂等返回：不把 succeeded/failed 改写成 cancelled
 
     job.cancel_requested = True
     if job.transport in (Transport.CLI_SERVE, Transport.HTTP_BRIDGE) and job.cancel_method:

@@ -90,6 +90,25 @@ def test_cmd_positional_effectcraft_pairs(impl):
     assert argv[:3] == ["C:/x/effectcraft-cli.exe", "run", "comp.add"]
     assert '{"kind": "solid"}' in argv
     assert "frame.render" in argv
+    assert argv.count("{}") == 1   # 空 params 也发 JSON（EffectCraft 必填）
+
+
+def test_cmd_positional_effectcraft_project_and_save_as(impl):
+    """EffectCraft：`run --project IN <cmd> <json> --save-as OUT`（实测 argv）。"""
+    seq = impl("sequence")
+    spec = impl("spec")
+    sp = _spec(impl, "effectcraft", cli_path="C:/x/effectcraft-cli.exe")
+    argv = seq.build_argv(
+        sp,
+        [spec.Step(cmd="app.about", params={})],
+        spec.Source(input_file="C:/x/in.ecproj"),
+        "C:/x/out.ecproj",
+    )
+
+    assert argv == [
+        "C:/x/effectcraft-cli.exe", "run", "--project", "C:/x/in.ecproj",
+        "app.about", "{}", "--save-as", "C:/x/out.ecproj",
+    ]
 
 
 def test_cmd_positional_requires_input_fails_closed(impl):

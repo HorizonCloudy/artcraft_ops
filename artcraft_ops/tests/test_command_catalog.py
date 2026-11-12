@@ -26,6 +26,38 @@ def _spec(impl, app_id):
     return impl("app_registry").get_spec(app_id)
 
 
+def _noise_items(impl):
+    """真实参数说明里的短词（this/nothing/like）不得参与检索。"""
+    spec = impl("spec")
+    noisy_schema = '{"mode":"this | nothing | like","note":"like this nothing"}'
+    return (
+        spec.CommandSpec(
+            id="image.adjustments.brightnessContrast",
+            label="Brightness/Contrast",
+            menu=("Image", "Adjustments"),
+            params_schema=noisy_schema,
+            enabled=True,
+            needs_document=True,
+        ),
+        spec.CommandSpec(
+            id="image.adjustments.contrast",
+            label="Contrast",
+            menu=("Image", "Adjustments"),
+            params_schema=noisy_schema,
+            enabled=True,
+            needs_document=True,
+        ),
+        spec.CommandSpec(
+            id="file.export",
+            label="Export\u2026",
+            menu=("File",),
+            params_schema=noisy_schema,
+            enabled=True,
+            needs_document=True,
+        ),
+    )
+
+
 def _sharpen_items(impl):
     spec = impl("spec")
     return tuple(
@@ -57,6 +89,15 @@ def test_catalog_cache_key_includes_version(impl):
     assert isinstance(k1, str) and k1
 
 
+def test_catalog_cache_key_isolates_parser(impl):
+    """PdfCraft 换解析器后，同版本旧目录（99 条）必须失效，不能读旧缓存。"""
+    catalog = impl("command_catalog")
+
+    assert catalog.cache_key(
+        "pdfcraft", "0.19.0", parser="pdfcraft",
+    ) != catalog.cache_key("pdfcraft", "0.19.0")
+
+
 def test_parse_commands_json_photocraft_7_fields(impl):
     """正常：PhotoCraft 7 字段（含 disabledReason / needsDocument）逐项精确解析。"""
     catalog = impl("command_catalog")
@@ -81,6 +122,36 @@ def test_parse_commands_json_photocraft_7_fields(impl):
     assert tuple(sharp.menu) == ("Filter", "Sharpen")
 
 
+def test_parse_commands_json_pdfcraft_uses_tool_name(impl):
+    """PdfCraft：``name`` 才是 --script 的 tool 名；``command`` 只是别名，可为 null。"""
+    catalog = impl("command_catalog")
+    spec = _spec(impl, "pdfcraft")
+    payload = [
+        {
+            "name": "doc_bates_multi",
+            "command": None,
+            "description": "Apply Bates numbering.",
+            "input_schema": {"type": "object", "required": ["files"]},
+            "read_only": False,
+        },
+        {
+            "name": "doc_open",
+            "command": "file.open",
+            "description": "Open a PDF file.",
+            "input_schema": {"type": "object"},
+            "read_only": True,
+        },
+    ]
+    items = catalog.parse_commands_json(json.dumps(payload), spec)
+
+    assert [c.id for c in items] == ["doc_bates_multi", "doc_open"]
+    assert items[0].alias == ""
+    assert items[0].label == "Apply Bates numbering."
+    assert items[0].params_schema == '{"type":"object","required":["files"]}'
+    assert items[1].alias == "file.open"
+    assert items[1].readonly is True
+
+
 def test_search_returns_params_schema(impl, monkeypatch):
     """#4 正常：search('sharpen','photocraft') 含 unsharpMask 且 params_schema 含 amount。"""
     catalog = impl("command_catalog")
@@ -98,6 +169,42 @@ def test_search_returns_params_schema(impl, monkeypatch):
     assert "filter.sharpen.unsharpMask" in ids
     assert any("amount" in (c.params_schema or "") for c in got)
     assert any(c.params_schema == SHARPEN_UNSHARPMASK_PARAMS for c in got)
+
+
+def test_search_chinese_brightness_maps_to_brightness_contrast(impl, monkeypatch):
+    """中文“调亮”必须映射到 brightness/contrast 类命令，首条为 brightnessContrast。"""
+    catalog = impl("command_catalog")
+    items = _noise_items(impl)
+    monkeypatch.setattr(catalog, "discover", lambda *a, **k: _coro(items), raising=True)
+
+    got = asyncio.run(catalog.search("调亮", "photocraft", top_k=8))
+    ids = [c.id for c in got]
+
+    assert ids, "调亮必须命中命令"
+    assert ids[0] == "image.adjustments.brightnessContrast", ids
+    assert "image.adjustments.contrast" in ids, ids
+
+
+def test_search_export_hits_export(impl, monkeypatch):
+    """英文 export 仍须命中 export 命令（不被中文映射改动影响）。"""
+    catalog = impl("command_catalog")
+    items = _noise_items(impl)
+    monkeypatch.setattr(catalog, "discover", lambda *a, **k: _coro(items), raising=True)
+
+    got = asyncio.run(catalog.search("export", "photocraft", top_k=8))
+
+    assert [c.id for c in got] == ["file.export"]
+
+
+def test_search_ignores_param_schema_noise(impl, monkeypatch):
+    """查询词只出现在 params_schema 时不得命中（this/nothing/like 是假命中源）。"""
+    catalog = impl("command_catalog")
+    items = _noise_items(impl)
+    monkeypatch.setattr(catalog, "discover", lambda *a, **k: _coro(items), raising=True)
+
+    got = asyncio.run(catalog.search("qqzzxx-nothing-like-this", "photocraft"))
+
+    assert tuple(got) == ()
 
 
 def test_save_cache_roundtrip(impl, tmp_path):
@@ -180,9 +287,8 @@ def _coro(value):
 def test_search_no_match_returns_empty(impl, monkeypatch):
     """边界/错误：零命中返回空元组，不抛异常、不返回 993 全量。"""
     catalog = impl("command_catalog")
-    monkeypatch.setattr(catalog, "discover", lambda *a, **k: _coro(()), raising=True)
-    monkeypatch.setattr(catalog, "load_cache", lambda key, cache_dir: None, raising=True)
-    monkeypatch.setattr(catalog, "save_cache", lambda key, its, cache_dir: None, raising=True)
+    items = _noise_items(impl)
+    monkeypatch.setattr(catalog, "discover", lambda *a, **k: _coro(items), raising=True)
 
     got = asyncio.run(catalog.search("zzz_no_such_command_9999", "photocraft"))
     assert tuple(got) == ()

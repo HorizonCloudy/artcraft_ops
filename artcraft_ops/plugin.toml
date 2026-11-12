@@ -13,7 +13,7 @@ name = "ArtCraft 全家桶操控"
 description = "用一句话操控本机 ArtCraft 系列软件：检索命令、编排序列、无头执行并回传图片"
 short_description = "操控 ArtCraft 系列软件"
 keywords = ["修图", "调亮", "图层", "导出", "锐化", "ArtCraft", "PhotoCraft", "VectorCraft", "CADCraft", "PdfCraft", "FilmCraft", "DeckCraft", "DesignCraft", "EffectCraft", "FigCraft", "GridCraft", "LightCraft", "MaterialCraft", "SolidCraft", "SoundCraft", "TextureCraft", "WordCraft", "Craft Anything"]
-version = "1.0.3"
+version = "1.0.8"
 type = "plugin"                             # 可省，默认就是 plugin
 entry = "plugin.plugins.artcraft_ops:ArtcraftOpsPlugin"   # ★ 必填（module:Class）
 

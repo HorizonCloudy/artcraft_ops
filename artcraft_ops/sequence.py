@@ -425,9 +425,8 @@ def build_argv_cmd_positional(
     argv += _source_pair(spec, source or Source())
     for step in ordered:
         argv.append(str(step.cmd))
-        params = step.params or {}
-        if params:
-            argv.append(json.dumps(params, ensure_ascii=False))
+        # EffectCraft 的 `run <id> <json>` 必填；空步骤也要发 "{}"。
+        argv.append(json.dumps(step.params or {}, ensure_ascii=False))
     argv += _save_pair(spec, out_file)
     return argv
 
@@ -1017,9 +1016,10 @@ def cached_catalog_ids(app_id: str, spec: Any) -> frozenset[str]:
     from . import command_catalog  # 局部导入：避免 sequence ↔ catalog 顶层循环
 
     version = str(getattr(spec, "version", "") or "")
+    parser = str(getattr(spec, "commands_parser", "") or "")
     try:
         items = command_catalog.load_cache(
-            command_catalog.cache_key(app_id, version),
+            command_catalog.cache_key(app_id, version, parser=parser),
             command_catalog.current_cache_dir(),
         )
     except Exception:

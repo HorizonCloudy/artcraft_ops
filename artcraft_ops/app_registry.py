@@ -149,8 +149,9 @@ BUILTIN_SPECS: dict[str, AppSpec] = {
     "effectcraft": _spec(
         "effectcraft", "EffectCraft", "effectcraft-cli.exe", "0.22.0",
         display_name="EffectCraft",
-        input_mode="positional", input_flag="", new_flag="", output_flag="",
-        save_flag="--save", cmd_join="positional",
+        # 实测 `run --project IN <cmd> <json>`；`--save` 是裸开关，落盘用 `--save-as OUT`。
+        input_mode="flag_project", input_flag="--project", new_flag="", output_flag="",
+        save_flag="--save-as", cmd_join="positional",
         commands_mode="plain", has_serve=False,
         script_flag="--commands", script_format="array_cmd",
         builder="cmd_positional",
@@ -204,6 +205,7 @@ BUILTIN_SPECS: dict[str, AppSpec] = {
         # PdfCraft 没有 `commands`，但 `tools` 就是它的目录（输出 JSON Schema）。
         commands_subcmd="tools", commands_mode="json_flag",
         script_flag="--script", script_format="array_tool",
+        commands_parser="pdfcraft",
         has_serve=False, builder="script_file",
     ),
     # --- 特殊：Craft Anything（无 run，tool 子命令） -------------------------

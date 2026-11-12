@@ -100,7 +100,7 @@ class AppSpec:
     )
     # --- §15.1 / §16.3 新增（per-app 解析器与能力门控，不能只靠 has_* 布尔）---
     supports_filter: bool = True              # Craft Anything=False（无 --filter）
-    commands_parser: str = "photocraft"       # "photocraft" | "craft_anything"
+    commands_parser: str = "photocraft"       # "photocraft" | "craft_anything" | "pdfcraft"
     filter_mode: str = "server"               # "server" | "local"
     capabilities_gate: bool = False           # CA=True：commands.json != 可用命令表
     output_format_flag: str = ""              # CA="--output-format json"（避开 --json 双义）
