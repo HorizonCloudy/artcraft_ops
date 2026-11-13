@@ -108,7 +108,7 @@ python -m pytest -q            # 全量；需要本机真实 CLI 的用例默认
 python -m pytest -q -m integration   # 仅在装了真机 CLI 时跑端到端
 ```
 
-**313 passed / 1 skipped**（Python 3.13 / 3.14，pytest 9.x 均可）。
+**321 passed / 1 skipped**（Python 3.13 / 3.14，pytest 9.x 均可）。
 
 约定：
 

@@ -2913,3 +2913,69 @@ README.md（公开仓根）                      测试数 291 → 313、包名 
 - S17 两条复核确认的 medium（评审发现，`_HOME_STOP` 缺全角开括号=过度脱敏方向、`hint`/`note`/`progress_label` 无测试锚点=补则基线 >313）→ 归 **S18**
 - 沙盒 `runner.py` Mapping 分支 + 可选 import 误报（两条工具侧待修，沿用）
 - 宿主实机装载 v1.0.3 与真机 A/B 未做（本轮在无宿主环境会话中发布；装包动作留给用户或下轮）
+
+---
+
+### §19.19 v1.0.8 收口：PdfCraft 目录解析 / EffectCraft 入参 / 终态取消幂等 / 中文检索（2026-11-13，**单提交 11 文件**）
+
+**（一）版本边界**
+
+| 项 | 值 |
+|---|---|
+| 版本 | `1.0.3` → `1.0.8` |
+| 私有仓 | `ddf40e5`（唯一提交，`320 insertions / 36 deletions`） |
+| 中间号 | `1.0.4`～`1.0.7` 是本次会话内的本地迭代号，未单独提交、未发布；对外只认 `1.0.8` |
+| 公开仓 | 本轮未同步、未打 tag、未发 Release（私有仓无 remote，push 未执行） |
+| 回归 | `321 passed / 1 skipped`（Python 3.14，本轮复跑 8.36s 确认） |
+
+**（二）四条真机缺陷与修法**
+
+| # | 现象（真机） | 修法 | 文件 |
+|---|---|---|---|
+| 1 | PdfCraft `tools --json` 只出 99 条 | `name` 才是 `--script` 唯一认的 tool 名，`command` 只是别名；新增 `pdfcraft` 解析器走 `name`，99→195 条 | `command_catalog.py`、`app_registry.py`、`spec.py` |
+| 2 | 旧解析器落盘的同版本缓存会继续命中 | `cache_key()` 加 `parser` 维度，解析器换代自动换键；`discover()` 与 `cached_catalog_ids()` 两处调用同步 | `command_catalog.py`、`sequence.py` |
+| 3 | EffectCraft 命令全失败 | 实测入口是 `run --project IN <cmd> <json>`：`input_mode` 改 `flag_project` + `--project`，落盘 `--save` 是裸开关、真正写文件用 `--save-as OUT` | `app_registry.py` |
+| 4 | 空参数步骤子进程收到空串 | `cmd_positional` 的每步都发 JSON，空参数发 `{}`（原来是 `if params` 才追加） | `sequence.py` |
+
+**（三）长任务状态机：终止态不再被改写**
+
+`cancel_job` 原实现对已完成任务也置 `cancel_requested`，随后被回写成 `CANCELLED`——`succeeded` / `failed` 的结果被抹掉。改为：`status_value(job) in TERMINAL_STATUSES` 直接返回 job（幂等）。同时补三处取消检查点（循环头、spawn 后立刻 `runner.terminate`、流式读取结束后），堵住「取消请求落在 spawn 与读流之间」的窗口。真机复现：`job-c3c532812382` 已 `succeeded`，连打两次 `cancel_job` 均原样返回 `succeeded`，`get_job` 最终仍 `succeeded`。
+
+**（四）检索：中文操作词 + 分级权重**
+
+- 命令表只有英文，用户说「调亮」命中 0 条。加 `_ZH_WORDS`（15 条常用中文操作词 → 英文检索词），命中即扩展检索词。
+- 打分改分级权重：`query` 全串命中 4，`id` / `label` / `alias` / `menu` 分词命中 4 / 3 / 2 / 2，`id` 前缀命中 4；英文按词边界匹配（`brightness` 不再命中参数说明里的短词），中文按子串。
+- `params_schema` 从检索域移出：`this` / `nothing` 这类短词是假命中源。
+- 门控：未做中文扩展且分词 ≥2 时仍要求 ≥2 个命中，与旧行为一致，避免召回放大。
+
+**（五）去标识化边界**
+
+`_HOME_STOP` 补全角开括号 `（`：原字符集只有全角闭括号，用户名后紧跟 `（` 时会吞掉整句。属 §19.17（五）遗留的 S18 第一条，本轮顺手补上。
+
+**（六）真宿主验收（N.E.K.O `0.9.1-rc4`，PID `12348`，`http://127.0.0.1:48916`）**
+
+| 项 | 结果 |
+|---|---|
+| 装载 | 插件 `1.0.8`；安装目录与发布包 22 个文件逐字节一致 |
+| 六入口 | `list_apps` / `search_commands` / `run_sequence` / `get_job` / `cancel_job` / `open_in_studio` 全部调用通 |
+| `list_apps` | 17 个 app，`cli_path_found` 全 `true` |
+| 图片导出 | `job-4ee89f87df41` 成功，`480×320`，像素 `#3366CC` 不透明，1623 B，sha256 `CED9E29B…ABFEFD` |
+| 终态取消 | 见（三），`succeeded` 不被改写 |
+| `open_in_studio` | `launched=true`、`handoff_verified=false` |
+| Studio 实际路径 | `C:\Program Files\ArtCraft\artcraft.exe`（用户口述的 `E:\Program Files\Artcraft` 与实测不符） |
+
+**（七）产物**
+
+| 检查 | 结果 |
+|---|---|
+| 包 | `dist\artcraft_ops-1.0.8.neko-plugin` / 120619 B / sha256 `DAFB12CD…969D91` |
+| 包内 vs 安装目录 | 22/22 逐字节一致 |
+| 包内 vs 仓库 | 21/22 一致；唯一差异 `plugin.meta.json` 是打包生成文件，仓库中不存在（预期） |
+| 时间戳 | 包在提交前生成；包内容与提交后源码一致，未重建（重建会改 zip 时间戳与 sha256） |
+
+**（八）遗留**
+
+- `open_in_studio` 只证到进程拉起（`launched=true`），Studio 窗口内是否真加载了文件仍无证据（`handoff_verified=false`）。要证死需要窗口级取证（UIA / 截图 / 进程参数），本轮没做。
+- PdfCraft 目录解析与 EffectCraft 落盘只做了单元与沙盒验证，**未在真机跑通端到端**。
+- 画板导出用例失败（`job-13cbbcac8557`，`the document has no artboards`）是测试命令选错，不是插件回归。
+- 公开仓同步、tag、Release 均未做；`spec/` 与 `dist/` 属私有专属，不同步。
