@@ -474,6 +474,7 @@ def _job_to_dict(job: JobState) -> dict[str, Any]:
         "retried_readonly": job.retried_readonly,
         "error_code": job.error_code, "error_message": job.error_message,
         "result_path": job.result_path, "warnings": list(job.warnings),
+        "inspect": job.inspect,
         "attempts": job.attempts,
         "transport": job.transport.value if isinstance(job.transport, Transport)
         else str(job.transport),
@@ -573,6 +574,7 @@ def restore_jobs(path: str) -> None:
             error_message=str(record.get("error_message") or ""),
             result_path=str(record.get("result_path") or ""),
             warnings=tuple(str(w) for w in (record.get("warnings") or ())),
+            inspect=record.get("inspect") if isinstance(record.get("inspect"), dict) else None,
             attempts=int(record.get("attempts") or 0),
             transport=transport,
             remote_job_id=str(record.get("remote_job_id") or ""),

@@ -49,12 +49,13 @@ def test_job_status_enum_values(impl):
 
 
 def test_persist_restore_jobs(impl, tmp_path):
-    """正常：persist_jobs -> restore_jobs 往返能找回同一 job_id。"""
+    """正常：persist_jobs -> restore_jobs 往返能找回同一 job_id 与 inspect。"""
     jobs = impl("jobs")
     saved = dict(jobs._JOBS)
     try:
         jobs._JOBS.clear()
-        j = jobs.create_job("photocraft", ["cli", "run"], False)
+        j = jobs.create_job("effectcraft", ["run"], False)
+        j.inspect = {"name": "ProbeComp", "width": 320}
         path = str(tmp_path / "jobs.json")
 
         jobs.persist_jobs(path)
@@ -62,7 +63,31 @@ def test_persist_restore_jobs(impl, tmp_path):
 
         jobs._JOBS.clear()
         jobs.restore_jobs(path)
-        assert jobs.get_job(j.job_id) is not None
+        restored = jobs.get_job(j.job_id)
+        assert restored is not None
+        assert restored.inspect == {"name": "ProbeComp", "width": 320}
+    finally:
+        jobs._JOBS.clear()
+        jobs._JOBS.update(saved)
+
+
+def test_restore_ignores_non_dict_inspect(impl, tmp_path):
+    """边界：磁盘上的 inspect 不是对象 -> 恢复为 None，不把坏数据带进内存。"""
+    jobs = impl("jobs")
+    saved = dict(jobs._JOBS)
+    try:
+        jobs._JOBS.clear()
+        j = jobs.create_job("effectcraft", ["run"], False)
+        path = tmp_path / "jobs.json"
+        path.write_text(json.dumps([{
+            "job_id": j.job_id, "app_id": j.app_id, "status": "succeeded",
+            "inspect": "not-a-dict",
+        }]), encoding="utf-8")
+
+        jobs.restore_jobs(str(path))
+        restored = jobs.get_job(j.job_id)
+        assert restored is not None
+        assert restored.inspect is None
     finally:
         jobs._JOBS.clear()
         jobs._JOBS.update(saved)

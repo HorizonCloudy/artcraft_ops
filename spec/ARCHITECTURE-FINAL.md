@@ -954,12 +954,14 @@ def redact_text(s: str) -> str: ...
 # __init__.py —— P2 工具返回值字段白名单
 TOOL_OUTPUT_ALLOWLIST: frozenset[str] = frozenset({
     "job_id","status","poll_with","cancel_with","progress","progress_label",
-    "phase","error_code","error_message","result_handle","preview_url",
+    "phase","error_code","error_message","result_handle","preview_url","output_files",
     "app","version","total_matched","hint","commands","apps",
+    "exit_code","ok","warnings","inspect",          # §19.20：结构化结果，redact 后放行
+    "launched","studio_available","file_count","handoff_verified","exe_path","note",
 })
 def tool_output(payload: dict) -> dict:
     """每个 @llm_tool 返回前必过：只留白名单字段 + redact()。
-    一律不返回：响应体 / steps 全文 / inspect 全文 / argv / stderr_text /
+    一律不返回：响应体 / steps 全文 / argv / stderr_text /
                 RawOutput / 连接串 / token / instance.json 内容。"""
     return redact({k: v for k, v in payload.items() if k in TOOL_OUTPUT_ALLOWLIST})
 
@@ -2976,6 +2978,6 @@ README.md（公开仓根）                      测试数 291 → 313、包名 
 **（八）遗留**
 
 - `open_in_studio` 只证到进程拉起（`launched=true`），Studio 窗口内是否真加载了文件仍无证据（`handoff_verified=false`）。要证死需要窗口级取证（UIA / 截图 / 进程参数），本轮没做。
-- PdfCraft 目录解析与 EffectCraft 落盘只做了单元与沙盒验证，**未在真机跑通端到端**。
+- PdfCraft 目录解析已真机验证（195 条命令）；EffectCraft 落盘在 v1.0.9 真机跑通，见 §19.20。
 - 画板导出用例失败（`job-13cbbcac8557`，`the document has no artboards`）是测试命令选错，不是插件回归。
 - 公开仓同步、tag、Release 均未做；`spec/` 与 `dist/` 属私有专属，不同步。
