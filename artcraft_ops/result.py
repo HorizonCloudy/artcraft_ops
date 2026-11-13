@@ -37,14 +37,23 @@ def _loads(line: str) -> dict | None:
     return parsed if isinstance(parsed, dict) else None
 
 
-def extract_inspect(steps: tuple[dict, ...] | list[dict]) -> dict | None:
-    """从步骤里精确抽出最后一条 ``document.inspect`` 的 ``result``（绝不臆造状态）。"""
+def extract_inspect(
+    steps: tuple[dict, ...] | list[dict], inspect_command: str = "",
+) -> dict | None:
+    """从步骤里精确抽出最后一条检查命令的 ``result``（绝不臆造状态）。
+
+    默认识别 ``document.inspect`` / ``doc.inspect``；app 显式给了
+    ``spec.inspect_command``（EffectCraft ``comp.info``）时一并识别。
+    """
+    names = {"document.inspect", "doc.inspect"}
+    if inspect_command:
+        names.add(inspect_command)
     found: dict | None = None
     for step in steps or ():
         if not isinstance(step, dict):
             continue
         command = str(step.get("command") or step.get("cmd") or "")
-        if command == "document.inspect" or command == "doc.inspect":
+        if command in names:
             result = step.get("result")
             if isinstance(result, dict):
                 found = result
@@ -122,7 +131,9 @@ def parse_exec_output(raw: Any, spec: Any = None, job: Any = None) -> ExecResult
     if getattr(raw, "truncated", False) or limit_hit:
         warnings.append(f"LIMIT_REPLY: {t('LIMIT_REPLY')}")
 
-    inspect = extract_inspect(tuple(steps))
+    inspect = extract_inspect(
+        tuple(steps), str(getattr(spec, "inspect_command", "") or ""),
+    )
     output_files = (result_path,) if result_path else ()
     result = ExecResult(
         ok=True,

@@ -266,6 +266,24 @@ def test_plan_inspect_disabled_and_no_duplicate(impl):
     assert [s.cmd for s in out].count("document.inspect") == 1
 
 
+# [真机 2026-11-13] EffectCraft `commands --filter inspect --json` 返回 []：
+# 它没有 document.inspect，自动检查只能追加实测可用的 comp.info。
+EFFECTCRAFT_CLI = r"E:\Program Files\Artcraft\EffectCraft\effectcraft-cli.exe"
+
+
+def test_plan_inspect_uses_app_inspect_command(impl):
+    """正常：EffectCraft 追加 comp.info（不是 document.inspect），且不重复追加。"""
+    sequence = impl("sequence")
+    spec_ec = _spec(impl, "effectcraft", EFFECTCRAFT_CLI)
+    steps = [_step(impl, "comp.new", {"name": "ProbeComp", "width": 320, "height": 180})]
+    out = sequence.plan_inspect(steps, spec_ec, enabled=True)
+    assert [s.cmd for s in out] == ["comp.new", "comp.info"]
+
+    already = steps + [_step(impl, "comp.info", {})]
+    out = sequence.plan_inspect(already, spec_ec, enabled=True)
+    assert [s.cmd for s in out].count("comp.info") == 1
+
+
 def test_is_readonly_prefixes(impl):
     """正常：§2 readonly_prefixes 判定（供 jobs 编辑类鉴别）。"""
     sequence = impl("sequence")

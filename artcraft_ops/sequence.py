@@ -218,12 +218,16 @@ def check_command_allowed(
 # 序列规划
 # ---------------------------------------------------------------------------
 def plan_inspect(steps: list[Step], spec: Any, enabled: bool = True) -> list[Step]:
-    """``inspect=True`` 时在末尾追加 ``document.inspect``（幂等，不重复追加）。"""
+    """``inspect=True`` 时在末尾追加检查命令（幂等，不重复追加）。
+
+    默认 `{engine_namespace}.inspect`；``spec.inspect_command`` 非空时用它
+    （EffectCraft 实测是 `comp.info`，没有 `document.inspect`）。
+    """
     out = list(steps or ())
     if not enabled:
         return out
     engine_ns = str(getattr(spec, "engine_namespace", "document") or "document")
-    inspect_id = f"{engine_ns}.inspect"
+    inspect_id = str(getattr(spec, "inspect_command", "") or "") or f"{engine_ns}.inspect"
     if out and normalize_command_id(out[-1].cmd, spec, "engine") == inspect_id:
         return out
     out.append(Step(cmd=inspect_id, params={}))

@@ -104,6 +104,17 @@ def test_extract_inspect_returns_result(impl):
     assert got["selectedLayers"] == [4]
 
 
+def test_extract_inspect_custom_command(impl):
+    """边界：EffectCraft 只在显式给 inspect_command 时认 comp.info，默认不臆造。"""
+    result = impl("result")
+    steps = (
+        {"command": "comp.new", "result": {"comp": 1}},
+        {"command": "comp.info", "result": {"id": 1, "name": "ProbeComp"}},
+    )
+    assert result.extract_inspect(steps, "comp.info") == {"id": 1, "name": "ProbeComp"}
+    assert result.extract_inspect(steps) is None
+
+
 def test_collect_warnings_only_flatten(impl):
     """正常：只把拍平警告收进 warnings，普通 stderr 噪声不误报为警告。"""
     result = impl("result")

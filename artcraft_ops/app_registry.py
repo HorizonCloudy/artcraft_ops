@@ -168,6 +168,9 @@ BUILTIN_SPECS: dict[str, AppSpec] = {
         commands_mode="plain", has_serve=False,
         script_flag="--commands", script_format="array_cmd",
         static_allowed_prefixes=_EFFECTCRAFT_NAMESPACES,
+        # 实测 `commands --filter inspect --json` 返回 []：没有 document.inspect。
+        # `comp.new` 之后 `comp.info` 可读（空项目直接跑报 no active composition）。
+        inspect_command="comp.info",
         builder="cmd_positional",
     ),
     "lightcraft": _spec(

@@ -87,6 +87,9 @@ class AppSpec:
     has_serve: bool = True                    # VectorCraft 无 serve
     serve_namespace: str = "doc"
     engine_namespace: str = "document"
+    # 序列末尾自动追加的检查命令。"" = 沿用 `{engine_namespace}.inspect`；
+    # EffectCraft 没有 document.inspect，实测用 `comp.info`（comp.new 后可用）。
+    inspect_command: str = ""
     control_port: int = 0                     # 0=动态(instance.json)；VectorCraft=7979
     instance_json: str = ""
     transport: Transport = Transport.CLI_RUN
