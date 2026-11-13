@@ -3046,3 +3046,59 @@ Plugin ID already registered in runtime
 - 本轮只验证 `inspect` 重启后不丢；`result_handle` 等其他 job 字段重启后是否丢失未验。
 - `open_in_studio` 仍是 `launched=true` / `handoff_verified=false`（见 §19.19（八））。
 - 未 push、未打 tag、未发 Release。
+
+### §19.21 v1.0.10 收口：`result_handle` 持久化与字段语义定案（2026-11-13，**单提交**）
+
+**（一）版本边界**
+
+| 项 | 值 |
+|---|---|
+| 上一版 | `1.0.9`（§19.20） |
+| 本版 | `1.0.10` |
+| 改动面 | job `result_handle` 持久化、版本升号 |
+| 提交 | 本轮单提交（普通 commit，未 amend / rebase / tag / push） |
+
+**（二）字段语义定案：`result_handle` 只表示 spill 落盘文件**
+
+§7 字段表与 §6 `[5]` 已定：`result_handle` 是 `result.materialize()` 超 512 KiB 时落盘 `data_path()` 的**完整结果文件路径**。普通任务不 spill，`result_handle` 留空，`get_job`（`__init__.py:530`）与完成文案（`jobs.py:204`）回退 `result_path`。因此真机 `jobs.json` 里 `result_handle=\"\"` 是契约内行为，**不改执行路径**，也不在任务完成时把 `result_path` 写进该字段。
+
+真机磁盘记录（`%LOCALAPPDATA%\\N.E.K.O\\plugins\\artcraft_ops\\data\\jobs.json`）：
+
+| 字段 | 值 |
+|---|---|
+| job | `job-c25f45568e45`，`status=succeeded` |
+| `result_path` | `…\\data\\e2e\\out-v1010.ecproj` |
+| `result_handle` | 空串（未 spill） |
+| `inspect` | `name=ProbeComp`、`320×180` 完整对象 |
+
+只重启 `artcraft_ops` 后 `get_job` 仍返回 `result_handle` 与 `inspect`：前者来自 `result_path` 回退，后者来自本轮新增的持久化。
+
+**（三）实现**
+
+`_job_to_dict` 写入 `result_handle`；`restore_jobs` 读回字符串，缺失或坏值回落空串，与 `result_path` 同级处理。持久化测试设值并断言往返。包与仓库三份改动文件（`jobs.py` / `plugin.toml` / `tests/test_jobs.py`）逐字节一致。
+
+**（四）真机 E2E（宿主 `0.9.1-rc4`，PID `12348`）**
+
+| 项 | 值 |
+|---|---|
+| `search_commands(\"调亮\")` | 7 条匹配 |
+| `list_apps` | 17 个 App |
+| job | `job-c25f45568e45`，`exit_code=0` |
+| inspect | `name=ProbeComp`，`320×180` |
+| 输出 | `out-v1010.ecproj` / 748757 B |
+| sha256 | `67CD1C1084DD0703F6AD27825BDF92B8DF7F93F9357D3EB07DFC124C8F2B557E` |
+
+**（五）产物与安装**
+
+| 检查 | 结果 |
+|---|---|
+| 包 | `dist\\artcraft_ops-1.0.10.neko-plugin` / 250344 B |
+| sha256 | `A3435CD323BCAF5466CA66A9D1E4825F1B541E92D6177F27ED5907374AB3E75F` |
+| payload hash | `e6a6baac41370c9d1f9161fb4bfe937e7698e84b3dd14aad17c663cf1a55cc2d` |
+| `/plugin-cli/verify` | `ok=true`、`version=1.0.10`、`payload_hash_verified=true`、`plugin_count=1` |
+| 安装 | `operation=upgrade`、`1.0.9 → 1.0.10`、`payload_hash_verified=true`、`rollback_status=not_needed`、`restarted=false` |
+| `/plugins/refresh` | 宿主显示 `1.0.10` |
+
+**（六）测试与遗留**
+
+`328 passed / 1 skipped`（Python 3.14，8.57s）。`open_in_studio` 仍是 `launched=true` / `handoff_verified=false`（§19.19（八））。宿主内已升级到 `1.0.10`；本轮未 push、未打 tag、未发 Release。

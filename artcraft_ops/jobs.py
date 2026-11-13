@@ -473,7 +473,9 @@ def _job_to_dict(job: JobState) -> dict[str, Any]:
         "is_edit_sequence": job.is_edit_sequence,
         "retried_readonly": job.retried_readonly,
         "error_code": job.error_code, "error_message": job.error_message,
-        "result_path": job.result_path, "warnings": list(job.warnings),
+        "result_path": job.result_path,
+        "result_handle": job.result_handle,
+        "warnings": list(job.warnings),
         "inspect": job.inspect,
         "attempts": job.attempts,
         "transport": job.transport.value if isinstance(job.transport, Transport)
@@ -573,6 +575,7 @@ def restore_jobs(path: str) -> None:
             error_code=str(record.get("error_code") or ""),
             error_message=str(record.get("error_message") or ""),
             result_path=str(record.get("result_path") or ""),
+            result_handle=str(record.get("result_handle") or ""),
             warnings=tuple(str(w) for w in (record.get("warnings") or ())),
             inspect=record.get("inspect") if isinstance(record.get("inspect"), dict) else None,
             attempts=int(record.get("attempts") or 0),

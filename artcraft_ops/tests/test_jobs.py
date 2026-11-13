@@ -56,6 +56,7 @@ def test_persist_restore_jobs(impl, tmp_path):
         jobs._JOBS.clear()
         j = jobs.create_job("effectcraft", ["run"], False)
         j.inspect = {"name": "ProbeComp", "width": 320}
+        j.result_handle = "C:/tmp/out.ecproj.spill.json"   # 句柄必须跟着落盘
         path = str(tmp_path / "jobs.json")
 
         jobs.persist_jobs(path)
@@ -66,6 +67,7 @@ def test_persist_restore_jobs(impl, tmp_path):
         restored = jobs.get_job(j.job_id)
         assert restored is not None
         assert restored.inspect == {"name": "ProbeComp", "width": 320}
+        assert restored.result_handle == "C:/tmp/out.ecproj.spill.json"
     finally:
         jobs._JOBS.clear()
         jobs._JOBS.update(saved)
