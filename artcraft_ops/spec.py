@@ -94,6 +94,9 @@ class AppSpec:
     readonly_prefixes: tuple[str, ...] = (
         "document.inspect", "session.list", "jobs.list", "command.list",
     )
+    # 无 discovery 缓存时的静态命名空间兜底：per-app 追加项（叠加全局
+    # STATIC_ALLOWED_*）。只填实测顶层命名空间；空 = 只用全局表。
+    static_allowed_prefixes: tuple[str, ...] = ()
     newline_json: bool = True
     flatten_warning_substr: str = (
         "flattened; layers, masks and blend modes are not kept"

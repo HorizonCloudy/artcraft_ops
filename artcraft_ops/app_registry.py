@@ -55,6 +55,19 @@ def _spec(
 #   cmd_kv        run <tool> key=value ...                        PdfCraft
 #   tool_subcmd   <tool> --json --project F                       Craft Anything
 # ---------------------------------------------------------------------------
+# EffectCraft 0.22.0 实测顶层命名空间（缓存命中时按全量 id 判，这里只兜底
+# 无缓存场景）。prefs./plugin./updates. 在 CommandPolicy 黑名单里，不列。
+_EFFECTCRAFT_NAMESPACES = tuple(
+    f"{ns}." for ns in (
+        "anim app cache camera command comp contentFill edit editor effect effects "
+        "engine essential expr face file footage help item jobs keys layer learn "
+        "library light liquify markers mask material mediaBrowser motion objectMatte "
+        "paint path paths playback project prop puppet render renderQueue roto scopes "
+        "script scriptui shape shortcuts storage templates text time timeline track "
+        "view warp window"
+    ).split()
+)
+
 BUILTIN_SPECS: dict[str, AppSpec] = {
     # --- 族 A：具名 flag（--cmd ID --params JSON） ---------------------------
     "photocraft": _spec(
@@ -154,6 +167,7 @@ BUILTIN_SPECS: dict[str, AppSpec] = {
         save_flag="--save-as", cmd_join="positional",
         commands_mode="plain", has_serve=False,
         script_flag="--commands", script_format="array_cmd",
+        static_allowed_prefixes=_EFFECTCRAFT_NAMESPACES,
         builder="cmd_positional",
     ),
     "lightcraft": _spec(

@@ -164,14 +164,19 @@ def is_readonly(cmd: str, spec: Any) -> bool:
     return any(name == str(p) or name.startswith(str(p) + ".") for p in prefixes)
 
 
-def static_is_allowed(cmd: str) -> bool:
-    """静态命名空间白名单（fail-closed 兜底，无 discovery 缓存时使用）。"""
+def static_is_allowed(cmd: str, spec: Any = None) -> bool:
+    """静态命名空间白名单（fail-closed 兜底，无 discovery 缓存时使用）。
+
+    全局表只覆盖 PhotoCraft 系；``spec.static_allowed_prefixes`` 追加该 app
+    实测的顶层命名空间（EffectCraft 的 ``comp.``/``layer.`` 等否则会被误拒）。
+    """
     name = str(cmd or "").strip()
     if not name or not _CMD_ID_RE.match(name):
         return False
     if name in STATIC_ALLOWED_EXACT:
         return True
-    return any(name.startswith(prefix) for prefix in STATIC_ALLOWED_PREFIXES)
+    extra = tuple(getattr(spec, "static_allowed_prefixes", ()) or ())
+    return any(name.startswith(prefix) for prefix in STATIC_ALLOWED_PREFIXES + extra)
 
 
 def check_command_allowed(
@@ -204,7 +209,7 @@ def check_command_allowed(
         if ids:
             if name not in ids:
                 _violate(f"命令 {name} 未在命令注册表中")
-        elif not static_is_allowed(name):
+        elif not static_is_allowed(name, spec):
             _violate(f"命令 {name} 未在已知命名空间白名单内")
     return None
 

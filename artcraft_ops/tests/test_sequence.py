@@ -317,6 +317,30 @@ def test_check_command_allowed_allows_registered_command(impl):
     assert sequence.check_command_allowed("file.new", spec_pc, policy, catalog) is None
 
 
+def test_effectcraft_static_namespaces_when_cache_missing(impl):
+    """边界：空缓存回退静态表时，EffectCraft 的 comp.new 不被误拒。
+
+    真机踩到：[FACT] 首次执行 `comp.new` 报「未在已知命名空间白名单内」，
+    必须先跑一次命令搜索生成缓存。per-app 表必须覆盖实测命名空间，未知
+    命名空间与 prefs. 黑名单照旧拒绝。
+    """
+    sequence = impl("sequence")
+    policy = impl("spec").CommandPolicy()
+    spec_ec = _spec(impl, "effectcraft", "effectcraft-cli.exe")
+
+    assert sequence.static_is_allowed("comp.new") is False          # 全局表不覆盖
+    assert sequence.static_is_allowed("comp.new", spec_ec) is True
+    assert sequence.check_command_allowed(
+        "comp.new", spec_ec, policy, frozenset(),
+    ) is None
+
+    for cmd in ("evil.inject", "prefs.setTheme"):
+        with pytest.raises(Exception) as ei:
+            sequence.check_command_allowed(cmd, spec_ec, policy, frozenset())
+        detail = _detail(ei.value)
+        assert "POLICY_VIOLATION" in detail or "PolicyViolation" in detail, detail
+
+
 def test_check_command_allowed_empty_cmd_rejected(impl):
     """错误输入：空命令 id 必须被拒，不得拼进 argv。"""
     sequence = impl("sequence")
