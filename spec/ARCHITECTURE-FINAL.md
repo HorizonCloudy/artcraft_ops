@@ -3093,9 +3093,10 @@ Plugin ID already registered in runtime
 | 检查 | 结果 |
 |---|---|
 | 包 | `dist\\artcraft_ops-1.0.10.neko-plugin` / 250344 B |
-| sha256 | `A3435CD323BCAF5466CA66A9D1E4825F1B541E92D6177F27ED5907374AB3E75F` |
+| sha256 | `678D58C08595265619109816185590CAF848F7016F908D0C6333624D5D069973` |
 | payload hash | `e6a6baac41370c9d1f9161fb4bfe937e7698e84b3dd14aad17c663cf1a55cc2d` |
 | `/plugin-cli/verify` | `ok=true`、`version=1.0.10`、`payload_hash_verified=true`、`plugin_count=1` |
+| 重建说明 | 同源重建 payload hash 不变（`e6a6baac…`），zip 仅条目时间戳变化，故 sha256 与首次构建不同 |
 | 安装 | `operation=upgrade`、`1.0.9 → 1.0.10`、`payload_hash_verified=true`、`rollback_status=not_needed`、`restarted=false` |
 | `/plugins/refresh` | 宿主显示 `1.0.10` |
 
