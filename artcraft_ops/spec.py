@@ -198,6 +198,7 @@ class JobState:
     result_path: str = ""
     result_handle: str = ""                   # 大响应落盘后的句柄（消息面只推它）
     warnings: tuple[str, ...] = ()
+    inspect: Optional[dict[str, Any]] = None    # 检查命令的最终结构（供 get_job 查看）
     attempts: int = 0
     transport: Transport = Transport.CLI_RUN
     remote_job_id: str = ""                   # serve/bridge 的 ArtCraft 侧 job id
@@ -293,7 +294,7 @@ TOOL_OUTPUT_ALLOWLIST: frozenset[str] = frozenset({
     "job_id", "status", "poll_with", "cancel_with", "progress", "progress_label",
     "phase", "error_code", "error_message", "result_handle", "preview_url",
     "app", "version", "total_matched", "hint", "commands", "apps",
-    "exit_code", "ok", "warnings", "output_files",
+    "exit_code", "ok", "warnings", "output_files", "inspect",
     # Studio 本地 GUI 交接（handoff_verified 恒 False：Popen 成功 != 窗口已加载）
     "launched", "studio_available", "file_count", "handoff_verified",
     "exe_path", "note",

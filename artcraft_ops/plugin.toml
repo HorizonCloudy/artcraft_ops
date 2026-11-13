@@ -47,7 +47,7 @@ llm_result_fields = ["job_id", "status", "poll_with", "cancel_with"]
 id = "artcraft_ops_get_job"
 name = "查询任务状态"
 timeout = 15
-llm_result_fields = ["job_id", "status", "progress", "progress_label", "result_handle", "preview_url", "error_code", "error_message"]
+llm_result_fields = ["job_id", "status", "progress", "progress_label", "result_handle", "preview_url", "inspect", "error_code", "error_message"]
 
 [[plugin.entries]]
 id = "artcraft_ops_cancel_job"

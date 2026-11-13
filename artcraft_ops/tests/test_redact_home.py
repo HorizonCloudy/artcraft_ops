@@ -333,6 +333,7 @@ def test_tool_output_text_fields_redacted(load_plugin_init):
         "warnings": [f"flattened: wrote {HOME_WIN}"],
         "result_handle": HOME_WIN,
         "output_files": [HOME_WIN],
+        "inspect": {"width": 320, "path": HOME_WIN, "api_key": "sk-live-123456"},
         "job_id": "j1",
     })
 
@@ -345,3 +346,6 @@ def test_tool_output_text_fields_redacted(load_plugin_init):
         f"warnings 是自由文本，必须归一：{out['warnings']!r}"
     assert out["result_handle"] == HOME_WIN, f"功能句柄被改写：{out['result_handle']!r}"
     assert out["output_files"] == [HOME_WIN], f"功能路径被改写：{out['output_files']!r}"
+    # inspect 是结构化结果：只做凭证脱敏，不做家目录归一（归一后的路径无法再被消费）。
+    assert out["inspect"] == {"width": 320, "path": HOME_WIN, "api_key": "***"}, \
+        f"inspect 白名单或脱敏不符：{out['inspect']!r}"

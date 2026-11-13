@@ -389,6 +389,7 @@ async def execute(
         job.stdout_lines = len(raw.stdout_lines)
         job.warnings = final.warnings
         job.result_handle = final.result_handle
+        job.inspect = final.inspect
         job.progress = 1.0 if final.ok else job.progress
         if final.ok:
             _finish(job, JobStatus.SUCCEEDED, raw.returncode)

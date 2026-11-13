@@ -26,15 +26,25 @@ _FLATTEN_DEFAULT = "flattened; layers, masks and blend modes are not kept"
 _ERROR_CODES_WITH_STDERR = frozenset({"CLI_USAGE_ERROR", "CLI_TASK_FAILED"})
 
 
-def _loads(line: str) -> dict | None:
-    text = (line or "").strip()
-    if not text.startswith("{"):
-        return None
-    try:
-        parsed = json.loads(text)
-    except ValueError:
-        return None
-    return parsed if isinstance(parsed, dict) else None
+def _iter_dicts(lines: Any) -> list[dict]:
+    """按顺序抽出连续 JSON 对象（兼容单行包络与多行裸 JSON）。"""
+    text = "\n".join(str(line) for line in lines or ())
+    decoder = json.JSONDecoder()
+    found: list[dict] = []
+    pos = 0
+    while True:
+        start = text.find("{", pos)
+        if start < 0:
+            break
+        try:
+            parsed, end = decoder.raw_decode(text, start)
+        except ValueError:
+            pos = start + 1
+            continue
+        if isinstance(parsed, dict):
+            found.append(parsed)
+        pos = end
+    return found
 
 
 def extract_inspect(
@@ -49,14 +59,17 @@ def extract_inspect(
     if inspect_command:
         names.add(inspect_command)
     found: dict | None = None
-    for step in steps or ():
-        if not isinstance(step, dict):
-            continue
+    items = [s for s in steps or () if isinstance(s, dict)]
+    for step in items:
         command = str(step.get("command") or step.get("cmd") or "")
         if command in names:
             result = step.get("result")
             if isinstance(result, dict):
                 found = result
+    # 裸 JSON app（EffectCraft）不输出 command 包络：检查命令固定最后执行，取最后一个对象
+    if found is None and inspect_command and items:
+        if not any(step.get("command") or step.get("cmd") for step in items):
+            found = items[-1]
     return found
 
 
@@ -114,7 +127,7 @@ def parse_exec_output(raw: Any, spec: Any = None, job: Any = None) -> ExecResult
         failed.user_message = compose_user_message(failed, "zh")
         return failed
 
-    steps: list[dict] = []
+    lines: list[str] = []
     total = 0
     limit_hit = False
     for line in getattr(raw, "stdout_lines", ()) or ():
@@ -123,10 +136,8 @@ def parse_exec_output(raw: Any, spec: Any = None, job: Any = None) -> ExecResult
             limit_hit = True
             break
         total += size
-        parsed = _loads(line)
-        if parsed is None:
-            continue
-        steps.append(parsed)
+        lines.append(str(line))
+    steps = _iter_dicts(lines)
 
     if getattr(raw, "truncated", False) or limit_hit:
         warnings.append(f"LIMIT_REPLY: {t('LIMIT_REPLY')}")
@@ -183,11 +194,14 @@ def compose_user_message(r: ExecResult, lang: str = "zh") -> str:
             layers = inspect.get("layers") or ()
             active = inspect.get("activeLayer")
             if lang == "en":
-                lines.append(
-                    f"canvas {width}x{height}, {len(layers)} layer(s), active layer {active}"
-                )
+                line = f"canvas {width}x{height}, {len(layers)} layer(s)"
+                if active is not None:
+                    line += f", active layer {active}"
             else:
-                lines.append(f"画布 {width}x{height}，{len(layers)} 个图层，当前图层 {active}")
+                line = f"画布 {width}x{height}，{len(layers)} 个图层"
+                if active is not None:
+                    line += f"，当前图层 {active}"
+            lines.append(line)
     else:
         message = str(getattr(r, "error_message", "") or "")
         lines.append(message or ("job failed" if lang == "en" else "任务失败"))

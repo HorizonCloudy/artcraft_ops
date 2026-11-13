@@ -318,3 +318,52 @@ def test_spill_summary_keeps_command_step_count(impl, tmp_path):
         spilled = json.load(fh)
     assert len(spilled["steps"]) == 5
     assert [s.get("command") for s in spilled["steps"]][-1] == "document.inspect"
+
+# ---------------------------------------------------------------------------
+# EffectCraft：多行裸 JSON（无 command 包络）
+# ---------------------------------------------------------------------------
+EFFECTCRAFT_STDOUT_LINES = (
+    "{",
+    '  "comp": 1',
+    "}",
+    "{",
+    '  "width": 320,',
+    '  "height": 180,',
+    '  "layers": []',
+    "}",
+)
+
+
+def test_effectcraft_multiline_bare_json(impl):
+    """真机回归：多行格式化 JSON 必须解析成 2 个对象，inspect 取 comp.info 结果。"""
+    result = impl("result")
+    spec_mod = impl("spec")
+    spec_ef = impl("app_registry").get_spec("effectcraft")
+    job = spec_mod.JobState(job_id="job-ef-1", app_id="effectcraft")
+
+    r = result.parse_exec_output(
+        _raw(impl, lines=EFFECTCRAFT_STDOUT_LINES), spec_ef, job,
+    )
+
+    assert r.ok is True
+    assert len(r.steps) == 2
+    assert r.steps[0] == {"comp": 1}
+    assert r.inspect == {"width": 320, "height": 180, "layers": []}
+    assert "None" not in r.user_message
+
+
+def test_extract_inspect_bare_json_uses_last_object(impl):
+    """裸 JSON app：显式 inspect_command 时取最后一个对象；默认不臆造。"""
+    result = impl("result")
+    steps = ({"comp": 1}, {"width": 320, "height": 180})
+
+    assert result.extract_inspect(steps, "comp.info") == {"width": 320, "height": 180}
+    assert result.extract_inspect(steps) is None
+
+
+def test_extract_inspect_envelope_missing_does_not_fallback(impl):
+    """有 command 包络但缺检查步时，绝不拿最后一条结果冒充 inspect。"""
+    result = impl("result")
+    steps = ({"command": "comp.new", "result": {"comp": 1}},)
+
+    assert result.extract_inspect(steps, "comp.info") is None

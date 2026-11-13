@@ -178,8 +178,9 @@ _BACKGROUND: set[asyncio.Task] = set()
 def tool_output(payload: dict[str, Any]) -> dict[str, Any]:
     """``@llm_tool`` 返回前必过：只留白名单字段 + ``redact()``。
 
-    一律不返回：响应体 / steps 全文 / inspect 全文 / argv / stderr_text /
-    RawOutput / 连接串 / token / instance.json 内容。
+    一律不返回：响应体 / steps 全文 / argv / stderr_text / RawOutput /
+    连接串 / token / instance.json 内容。
+    ``inspect`` 只留配置的检查命令结果（结构化，走凭证脱敏；不做家目录归一）。
     """
     if not isinstance(payload, dict):
         return {}
@@ -505,7 +506,7 @@ class ArtcraftOpsPlugin(NekoPluginBase):
         timeout=15.0,
         llm_result_fields=[
             "job_id", "status", "progress", "progress_label",
-            "result_handle", "preview_url", "error_code", "error_message",
+            "result_handle", "preview_url", "inspect", "error_code", "error_message",
         ],
     )
     @llm_tool(
@@ -529,6 +530,7 @@ class ArtcraftOpsPlugin(NekoPluginBase):
                 "result_handle": str(job.result_handle or job.result_path or ""),
                 "preview_url": str(getattr(job, "preview_url", "") or ""),
                 "output_files": [str(job.result_path)] if job.result_path else [],
+                "inspect": job.inspect,
                 "warnings": list(job.warnings or ()),
                 "exit_code": job.exit_code,
                 "ok": status == spec.JobStatus.SUCCEEDED.value,
