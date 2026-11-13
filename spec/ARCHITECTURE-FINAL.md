@@ -2981,3 +2981,68 @@ README.md（公开仓根）                      测试数 291 → 313、包名 
 - PdfCraft 目录解析已真机验证（195 条命令）；EffectCraft 落盘在 v1.0.9 真机跑通，见 §19.20。
 - 画板导出用例失败（`job-13cbbcac8557`，`the document has no artboards`）是测试命令选错，不是插件回归。
 - 公开仓同步、tag、Release 均未做；`spec/` 与 `dist/` 属私有专属，不同步。
+---
+
+### §19.20 v1.0.9 收口：EffectCraft 真机 E2E / inspect 契约三修 / job 字段持久化（2026-11-13，**4 提交**）
+
+**（一）版本边界**
+
+| 项 | 值 |
+|---|---|
+| 上一版 | `1.0.8`（§19.19） |
+| 本版 | `1.0.9` |
+| 改动面 | EffectCraft 命令命名空间、inspect 命令可配置、裸 JSON 提取、job `inspect` 持久化 |
+| 提交 | `2d9b3ea` → `02de1bf` → `7033c7b` → `2d61c9f` |
+
+**（二）EffectCraft 三处契约错（真机暴露）**
+
+1. **空缓存误拒**：命令目录为空时，`comp.new` 这类静态命名空间被当成未知命令。改为空缓存回退 EffectCraft 静态命名空间。
+2. **inspect 命令硬编码**：原实现只认 `document.inspect` / `doc.inspect`，EffectCraft 实测没有这两个名字，只有 `comp.info`。`AppSpec` 新增 `inspect_command`，空值沿用 `{engine_namespace}.inspect`；`plan_inspect` 优先按配置追加且保持幂等；`extract_inspect` 在显式配置时把该名字一并加入识别集。
+3. **裸 JSON 输出**：`comp.info` 输出是多行裸 JSON，没有 `command` / `cmd` 包装。仅当显式配置 `inspect_command` 且整份输出不含 `command` / `cmd` 时，取最后一个 JSON 对象。
+
+**（三）真机 E2E（宿主 `0.9.1-rc4`，PID `12348`）**
+
+| 项 | 值 |
+|---|---|
+| run | `b2335d83-20f2-42b0-bc35-862466f77c9d` |
+| job | `job-e95d83ee87dd` |
+| 查询 run | `b5e54ca7-470b-4432-97aa-5a0778e6c2d0` |
+| 结果 | `status=succeeded`，`exit_code=0` |
+| inspect | `name=ProbeComp`，`320×180` |
+| 输出 | `out-v110-090424.ecproj` / 748757 B |
+| 对照（旧任务） | `095e979a…` / `job-c5f3b6f9d28a` → `out-v109-085549.ecproj` |
+| 缓存恢复文件 | `2926461abe660a832fa9.json` / 215380 B |
+| Studio | `C:\Program Files\ArtCraft\artcraft.exe` |
+
+**（四）job `inspect` 持久化**
+
+`_job_to_dict` 写入 `inspect`；`restore_jobs` 只接受 dict，坏数据回落 `None`，不把不可信载荷带回内存。`plugin.toml` 版本升到 `1.0.9`，`llm_result_fields` 已含 `inspect`；出口白名单同步放行 `output_files` / `exit_code` / `ok` / `warnings` / `inspect`（结构化字段仍走凭证脱敏，不做家目录归一）。测试 `328 passed / 1 skipped`（Python 3.14）。
+
+**（五）开发注册 409 与 SDK 构建路线**
+
+`POST` 开发注册稳定返回 HTTP `409`：
+
+```
+Plugin ID already registered in runtime
+```
+
+冲突来自宿主运行时状态与已安装插件目录（宿主仍装 `1.0.8`）。不放宽校验、不停宿主、不改安装目录。改走宿主 SDK：`PluginBuilder` 构建 → `/plugin-cli/verify` 校验 → 包落盘。
+
+**（六）产物**
+
+| 检查 | 结果 |
+|---|---|
+| 包 | `dist\artcraft_ops-1.0.9.neko-plugin` / 250268 B |
+| sha256 | `2a2c2605d773935ae585140c6903ab03b738cf98cb9ce2ff8d166c96e9e50fb6` |
+| payload hash | `7f8a771275383a887ec148aee9be7f61de9c657bebbb3bdcc2d7659e42055414` |
+| `/plugin-cli/verify` | `ok=true`、`version=1.0.9`、`payload_hash_verified=true`、`plugin_count=1`、`metadata_found=true` |
+| 包内 | 47 条目；源码与仓库逐字节一致；`plugin.meta.json` 为打包生成（仓库无，预期） |
+| 关键字节 | `jobs.py` 含 `"inspect": job.inspect`；`plugin.toml` = `1.0.9` |
+| 副本 | `%LOCALAPPDATA%\N.E.K.O\.neko-plugin-packages\artcraft_ops-1.0.9.neko-plugin`，与 `dist` 同 sha256 |
+
+**（七）遗留**
+
+- 最终包**没有**替换真实安装目录，宿主里仍是 `1.0.8`；安装动作留给用户。
+- 本轮只验证 `inspect` 重启后不丢；`result_handle` 等其他 job 字段重启后是否丢失未验。
+- `open_in_studio` 仍是 `launched=true` / `handoff_verified=false`（见 §19.19（八））。
+- 未 push、未打 tag、未发 Release。
